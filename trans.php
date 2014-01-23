@@ -78,6 +78,16 @@ if ( $x == 2 ) {
 	*/
 	header("Location: " . createTheDictLink($i,$t));
 	exit();
-}	
+}
+if($x==3){
+$link=createTheDictLink($i,$t);
+$glosbe_data = file_get_contents($link);
+if(! ($glosbe_data === FALSE)) {
+echo $glosbe_data;
+	}else{
+	echo "Fail!";
+	}
+}
+	
 
 ?>

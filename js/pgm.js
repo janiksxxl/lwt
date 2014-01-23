@@ -52,29 +52,29 @@ var ol_closecolor = '#FFFFFF';
 Helper functions for overlib
 ***************************************************************/
 
-function run_overlib_status_98(wblink1,wblink2,wblink3,hints,txid,torder,txt,wid,mw2,mw3,mw4,mw5,mw6,mw7,mw8,mw9,rtl,ann)
+function run_overlib_status_98(dicts,glink,hints,txid,torder,txt,wid,mw2,mw3,mw4,mw5,mw6,mw7,mw8,mw9,rtl,ann)
 {
 	return overlib(
 		'<b>' + escape_html_chars_2(hints,ann) + '</b><br /> ' +
 		make_overlib_link_new_word(txid,torder,wid) + ' | ' +
 		make_overlib_link_delete_word(txid,wid) + 
 		make_overlib_link_new_multiword(txid,torder,mw2,mw3,mw4,mw5,mw6,mw7,mw8,mw9,rtl) + ' <br /> ' +
-		make_overlib_link_wb(wblink1,wblink2,wblink3,txt,txid,torder), 
+		make_overlib_link_wb(dicts,glink,txt,txid,torder), 
 		CAPTION, 'Word');
 }
 
-function run_overlib_status_99(wblink1,wblink2,wblink3,hints,txid,torder,txt,wid,mw2,mw3,mw4,mw5,mw6,mw7,mw8,mw9,rtl,ann)
+function run_overlib_status_99(dicts,glink,hints,txid,torder,txt,wid,mw2,mw3,mw4,mw5,mw6,mw7,mw8,mw9,rtl,ann)
 {
 	return overlib(
 		'<b>' + escape_html_chars_2(hints,ann) + '</b><br /> ' +
 		make_overlib_link_new_word(txid,torder,wid) + ' | ' +
 		make_overlib_link_delete_word(txid,wid) + 
 		make_overlib_link_new_multiword(txid,torder,mw2,mw3,mw4,mw5,mw6,mw7,mw8,mw9,rtl) + ' <br /> ' +
-		make_overlib_link_wb(wblink1,wblink2,wblink3,txt,txid,torder), 
+		make_overlib_link_wb(dicts,glink,txt,txid,torder), 
 		CAPTION, 'Word');
 }
 
-function run_overlib_status_1_to_5(wblink1,wblink2,wblink3,hints,txid,torder,txt,wid,stat,mw2,mw3,mw4,mw5,mw6,mw7,mw8,mw9,rtl,ann)
+function run_overlib_status_1_to_5(dicts,glink,hints,txid,torder,txt,wid,stat,mw2,mw3,mw4,mw5,mw6,mw7,mw8,mw9,rtl,ann)
 {
 	return overlib(
 		'<b>' + escape_html_chars_2(hints,ann) + '</b><br /> ' +
@@ -83,34 +83,43 @@ function run_overlib_status_1_to_5(wblink1,wblink2,wblink3,hints,txid,torder,txt
 		make_overlib_link_delete_word(txid,wid) + 
 		make_overlib_link_new_multiword(txid,torder,mw2,mw3,mw4,mw5,
 		mw6,mw7,mw8,mw9,rtl) + ' <br /> ' +
-		make_overlib_link_wb(wblink1,wblink2,wblink3,txt,txid,torder),
+		make_overlib_link_wb(dicts,glink,txt,txid,torder),
 		CAPTION, make_overlib_link_edit_word_title(
 		'Word &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;',txid,torder,wid));
 }
 
-function run_overlib_status_unknown(wblink1,wblink2,wblink3,hints,txid,torder,txt,mw2,mw3,mw4,mw5,mw6,mw7,mw8,mw9,rtl)
+function run_overlib_status_unknown(dicts,glink,hints,txid,torder,txt,mw2,mw3,mw4,mw5,mw6,mw7,mw8,mw9,rtl)
 {
 	return overlib(
-		'<b>' + escape_html_chars(hints) + '</b><br /> ' +
+		'<b>' + hints+ '</b><br /> ' +
 		make_overlib_link_wellknown_word(txid,torder) + ' <br /> ' +  
 		make_overlib_link_ignore_word(txid,torder) + 
 		make_overlib_link_new_multiword(txid,torder,mw2,mw3,mw4,mw5,mw6,mw7,mw8,mw9,rtl) + ' <br /> ' +
-		make_overlib_link_wb(wblink1,wblink2,wblink3,txt,txid,torder),
+		make_overlib_link_wb(dicts,glink,txt,txid,torder),
 		CAPTION, 'New Word');
 }
 
-function run_overlib_multiword(wblink1,wblink2,wblink3,hints,txid,torder,txt,wid,stat,wcnt,ann)
+function run_overlib_multiword(dicts,glink,hints,txid,torder,txt,wid,stat,wcnt,ann)
 {
+//hints=hints.replace("//","</br>&nbsp;&nbsp;&nbsp;&nbsp;-");
+hints=hints.replace(/%/g,"</br>&nbsp;*&nbsp;");
+for(i=0;i<10;i++){
+hints=hints.replace(i+":","</br>&nbsp;*&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;");
+}
+//hints=hints.replace(";","</br>&nbsp;&nbsp;&nbsp;&nbsp;");
+hints=hints.replace(/▶/g,"</br>▶");
+//hints=hints.replace("▶<br>&nbsp;*"  ,"</br>▶");
+
 	return overlib(
-		'<b>' + escape_html_chars_2(hints,ann) + '</b><br /> ' +
+		'<b>' + escape_html_chars_3(hints,ann) + '</b><br /> ' +
 		make_overlib_link_change_status_all(txid,torder,wid,stat) + ' <br /> ' +
 		make_overlib_link_edit_multiword(txid,torder,wid) + ' | ' +
 		make_overlib_link_delete_multiword(txid,wid) + ' <br /> ' +
-		make_overlib_link_wb(wblink1,wblink2,wblink3,txt,txid,torder),
+		make_overlib_link_wb(dicts,glink,txt,txid,torder),
 		CAPTION, make_overlib_link_edit_multiword_title(wcnt.trim() + '-Word-Expression',txid,torder,wid));
 }
 
-function run_overlib_test(wblink1,wblink2,wblink3,wid,txt,trans,roman,stat,sent,todo,oldstat)
+function run_overlib_test(dicts,glink,wid,txt,trans,roman,stat,sent,todo,oldstat)
 {
 	var s = parseInt(stat,10);
 	var c = s+1; 
@@ -119,6 +128,7 @@ function run_overlib_test(wblink1,wblink2,wblink3,wid,txt,trans,roman,stat,sent,
 	if(w<1) w=1;
 	var cc = stat + ' ▶ ' + c; if(c==s) cc=c; 
 	var ww = stat + ' ▶ ' + w; if(w==s) ww=w;
+	
 	return overlib(
 	(todo == 1 ?
 		'<center><hr noshade size=1 /><b>' +
@@ -134,10 +144,9 @@ function run_overlib_test(wblink1,wblink2,wblink3,wid,txt,trans,roman,stat,sent,
 	'<b>' + escape_html_chars(make_tooltip(txt,trans,roman,stat)) +	
 	'</b><br />' +
 	' <a href=\x22edit_tword.php?wid=' + wid + '\x22 target=\x22ro\x22>Edit term</a><br />' +
-	createTheDictLink(wblink1,txt,'Dict1','Lookup Term: ') +
-	createTheDictLink(wblink2,txt,'Dict2','') +
-	createTheDictLink(wblink3,txt,'GTr','') + 
-	createTheDictLink(wblink3,sent,'GTr','<br />Lookup Sentence:'),
+	makeTranslateLinks(dicts,"Transl:",txt) +
+	createTheDictLink(glink,txt,'GTr','') + 
+	createTheDictLink(glink,sent,'GTr','<br />Lookup Sentence:'),
 	CAPTION, 'Got it?');
 }
 
@@ -163,29 +172,37 @@ function make_overlib_link_new_multiword(txid,torder,mw2,mw3,mw4,mw5,mw6,mw7,mw8
 	(mw9 != '' ? make_overlib_link_create_edit_multiword(9,txid,torder,mw9) : '') + ' ';
 }
 
-function make_overlib_link_wb(wblink1,wblink2,wblink3,txt,txid,torder) {
-	var s =  
-	createTheDictLink(wblink1,txt,'Dict1','Lookup Term: ') +
-	createTheDictLink(wblink2,txt,'Dict2','') +
-	createTheDictLink(wblink3,txt,'GTr','') + 
-	((torder < 1 || txid < 1) ? '' : '<br />Lookup Sentence: ' + createSentLookupLink(torder,txid,wblink3,'GTr'));
+function makeTranslateLinks(dicts,textTip,txt){
+back="";
+lengthx=dicts.length;
+while(lengthx > 0){
+if(lengthx==dicts.length){
+ back=back+createTheDictLink(dicts[lengthx-1][1],txt,dicts[lengthx-1][0],textTip);
+}else{
+ back=back+createTheDictLink(dicts[lengthx-1][1],txt,dicts[lengthx-1][0],'');
+}
+		lengthx--;
+    }
+	if(back=="") return "*no dictionaries defined*";
+	return back;
+}
+function make_overlib_link_wb(dicts,glink,txt,txid,torder) {
+	var s =  makeTranslateLinks(dicts,"Transl:",txt)+
+	createTheDictLink(glink,txt,'GTr','') + 
+	((torder < 1 || txid < 1) ? '' : '<br />Lookup Sentence: ' + createSentLookupLink(torder,txid,glink,'GTr'));
 	return s;
 }
 
-function make_overlib_link_wbnl(wblink1,wblink2,wblink3,txt,txid,torder) {
-	var s =  
-	createTheDictLink(wblink1,txt,'Dict1','Term: ') +
-	createTheDictLink(wblink2,txt,'Dict2','') +
-	createTheDictLink(wblink3,txt,'GTr','') + 
-	((torder < 1 || txid < 1) ? '' : ' | Sentence: ' + createSentLookupLink(torder,txid,wblink3,'GTr'));
+function make_overlib_link_wbnl(dicts,glink,txt,txid,torder) {
+var s =  makeTranslateLinks(dicts,"Transl:",txt)+
+	createTheDictLink(glink,txt,'GTr','') + 
+	((torder < 1 || txid < 1) ? '' : ' | Sentence: ' + createSentLookupLink(torder,txid,glink,'GTr'));
 	return s;
 }
 
-function make_overlib_link_wbnl2(wblink1,wblink2,wblink3,txt,sent) {
-	var s =  
-	createTheDictLink(wblink1,txt,'Dict1','Term: ') +
-	createTheDictLink(wblink2,txt,'Dict2','') +
-	createTheDictLink(wblink3,txt,'GTr','') + 
+function make_overlib_link_wbnl2(dicts,glink,txt,sent) {
+var s =  makeTranslateLinks(dicts,"Transl:",txt)+
+	createTheDictLink(glink,txt,'GTr','') + 
 	((sent == '') ? '' : createTheDictLink(wblink3,sent,'GTr',' | Sentence:'));
 	return s;
 }
@@ -403,6 +420,15 @@ function escape_html_chars_2 (title, ann) {
 	else
 		return escape_html_chars(title);
 }
+function escape_html_chars_3 (title, ann) {
+	if (ann != '' ) {
+		var ann2 = ann;
+		return title.replace(ann2,
+			'<span style="color:red">' + ann2 + '</span>');
+	}
+	else
+		return title;
+}
 
 function owin(url) {
 	window.open(
@@ -464,7 +490,8 @@ function createSentLookupLink(torder,txid,url,txt) {
 function escape_html_chars(s)
 {
 	return s.replace(/&/g,'%AMP%').replace(/</g,'&#060;').replace(/>/g,'&#062;').replace(/"/g,'&#034;').replace(/'/g,'&#039;').replace(/%AMP%/g,'&#038;').replace(/\x0d/g,'<br />');
-}
+return s;
+	}
 
 function escape_apostrophes(s)
 {

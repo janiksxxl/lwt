@@ -1726,7 +1726,8 @@ function createTheDictLink($u,$t) {
 	$url = trim($u);
 	$trm = trim($t);
 	$pos = stripos ($url, '###');
-	if ($pos !== false) {  // ### found
+	if ($pos !== false) {
+	// ### found 
 		$pos2 = strripos ($url, '###');
 		if ( ($pos2-$pos-3) > 1 ) {  // 2 ### found
 			$enc = trim(substr($url, $pos+3, $pos2-$pos-3));
@@ -1736,10 +1737,13 @@ function createTheDictLink($u,$t) {
 		} 
 		elseif ( $pos == $pos2 ) {  // 1 ### found
 			$r = str_replace("###", ($trm == '' ? '+' : urlencode($trm)), $url);
+		}elseif(($pos2-$pos-3) ==-2){
+		$r = str_replace("###", ($trm == '' ? '+' : urlencode($trm)), $url);
 		}
 	}
 	else  // no ### found
-		$r = $url . urlencode($trm);
+		$r = $url . urlencode($trm); echo $r;
+		
 	return $r;
 }
 
@@ -1747,26 +1751,42 @@ function createTheDictLink($u,$t) {
 
 function createDictLinksInEditWin($lang,$word,$sentctljs,$openfirst) {
 	global $tbpref;
-	$sql = 'select LgDict1URI, LgDict2URI, LgGoogleTranslateURI from ' . $tbpref . 'languages where LgID = ' . $lang;
+	$sql = 'select LgDefaultDictionary, LgGoogleTranslateURI from ' . $tbpref . 'languages where LgID = ' . $lang;
 	$res = do_mysql_query($sql);
 	$record = mysql_fetch_assoc($res);
-	$wb1 = isset($record['LgDict1URI']) ? $record['LgDict1URI'] : "";
-	$wb2 = isset($record['LgDict2URI']) ? $record['LgDict2URI'] : "";
 	$wb3 = isset($record['LgGoogleTranslateURI']) ? $record['LgGoogleTranslateURI'] : "";
 	mysql_free_result($res);
 	$r ='';
-	if ($openfirst) {
+	
+	$dictionaries="";
+	$sql = 'select name,URI,id from ' . $tbpref . 'ditionaries where languagesLgID = ' . $lang;
+$dics = do_mysql_query($sql);
+$count=0;
+$defDicURI="";
+while($dic=mysql_fetch_assoc($dics)){
+if($defDicURI==""){
+$defDicURI=$dic['URI'];
+}
+if($record['LgDefaultDictionary']==$dic['id']){
+$defDicURI=$dic['URI'];
+}
+$ount++;
+$dictionaries .= makeOpenDictStr(createTheDictLink($dic['URI'],$word), $dic['name']);
+}
+	if ($openfirst && $defDicURI!="") {
 		$r .= '<script type="text/javascript">';
 		$r .= "\n//<![CDATA[\n";
-		$r .= makeOpenDictStrJS(createTheDictLink($wb1,$word));
+		$r .= makeOpenDictStrJS(createTheDictLink($defDicURI,$word));
 		$r .= "//]]>\n</script>\n";
 	}
-	$r .= 'Lookup Term: ';
-	$r .= makeOpenDictStr(createTheDictLink($wb1,$word), "Dict1"); 
-	if ($wb2 != "") 
-		$r .= makeOpenDictStr(createTheDictLink($wb2,$word), "Dict2"); 
+	if($defDicURI==""){
+	$r .="</br>*No suitable dictionary configured, please add one or more lookup sites*";
+	}
+	$r .= '</br>Meklēt terminu: ';
+	$r .=$dictionaries;
+
 	if ($wb3 != "") 
-		$r .= makeOpenDictStr(createTheDictLink($wb3,$word), "GTr") . ' | Sent.: ' . makeOpenDictStrDynSent($wb3, $sentctljs, "GTr"); 
+		$r .= makeOpenDictStr(createTheDictLink($wb3,$word), "GTr") . ' | Teikums: ' . makeOpenDictStrDynSent($wb3, $sentctljs, "GTr"); 
 	return $r;
 }
 
@@ -1819,21 +1839,22 @@ function makeOpenDictStrDynSent($url, $sentctljs, $txt) {
 
 function createDictLinksInEditWin2($lang,$sentctljs,$wordctljs) {
 	global $tbpref;
-	$sql = 'select LgDict1URI, LgDict2URI, LgGoogleTranslateURI from ' . $tbpref . 'languages where LgID = ' . $lang;
+	$sql = 'select LgGoogleTranslateURI from ' . $tbpref . 'languages where LgID = ' . $lang;
 	$res = do_mysql_query($sql);
 	$record = mysql_fetch_assoc($res);
-	$wb1 = isset($record['LgDict1URI']) ? $record['LgDict1URI'] : "";
-	if(substr($wb1,0,1) == '*') $wb1 = substr($wb1,1);
-	$wb2 = isset($record['LgDict2URI']) ? $record['LgDict2URI'] : "";
-	if(substr($wb2,0,1) == '*') $wb2 = substr($wb2,1);
 	$wb3 = isset($record['LgGoogleTranslateURI']) ? $record['LgGoogleTranslateURI'] : "";
 	if(substr($wb3,0,1) == '*') $wb3 = substr($wb3,1);
 	mysql_free_result($res);
+	
+	$dictionaries="";
+	$sql = 'select name,URI,id from ' . $tbpref . 'ditionaries where languagesLgID = ' . $lang;
+$dics = do_mysql_query($sql);
+while($dic=mysql_fetch_assoc($dics)){
+$dictionaries .= '<span class="click" onclick="translateWord2(' . prepare_textdata_js($dics['URI']) . ',' . $wordctljs . ');">'.$dics['name'].'</span> ';	
+}
 	$r ='';
-	$r .= 'Lookup Term: ';
+	$r .= 'Lookup Term: '.$dictionaries;
 	$r .= '<span class="click" onclick="translateWord2(' . prepare_textdata_js($wb1) . ',' . $wordctljs . ');">Dict1</span> ';
-	if ($wb2 != "") 
-		$r .= '<span class="click" onclick="translateWord2(' . prepare_textdata_js($wb2) . ',' . $wordctljs . ');">Dict2</span> ';
 	if ($wb3 != "") 
 		$r .= '<span class="click" onclick="translateWord2(' . prepare_textdata_js($wb3) . ',' . $wordctljs . ');">GTr</span> | Sent.: <span class="click" onclick="translateSentence2(' . prepare_textdata_js($wb3) . ',' . $sentctljs . ');">GTr</span>'; 
 	return $r;
@@ -1843,20 +1864,26 @@ function createDictLinksInEditWin2($lang,$sentctljs,$wordctljs) {
 
 function makeDictLinks($lang,$wordctljs) {
 	global $tbpref;
-	$sql = 'select LgDict1URI, LgDict2URI, LgGoogleTranslateURI from ' . $tbpref . 'languages where LgID = ' . $lang;
+	$sql = 'select LgGoogleTranslateURI from ' . $tbpref . 'languages where LgID = ' . $lang;
 	$res = do_mysql_query($sql);
 	$record = mysql_fetch_assoc($res);
-	$wb1 = isset($record['LgDict1URI']) ? $record['LgDict1URI'] : "";
-	if(substr($wb1,0,1) == '*') $wb1 = substr($wb1,1);
-	$wb2 = isset($record['LgDict2URI']) ? $record['LgDict2URI'] : "";
-	if(substr($wb2,0,1) == '*') $wb2 = substr($wb2,1);
 	$wb3 = isset($record['LgGoogleTranslateURI']) ? $record['LgGoogleTranslateURI'] : "";
 	if(substr($wb3,0,1) == '*') $wb3 = substr($wb3,1);
 	mysql_free_result($res);
-	$r ='<span class="smaller">';
-	$r .= '<span class="click" onclick="translateWord3(' . prepare_textdata_js($wb1) . ',' . $wordctljs . ');">[1]</span> ';
-	if ($wb2 != "") 
-		$r .= '<span class="click" onclick="translateWord3(' . prepare_textdata_js($wb2) . ',' . $wordctljs . ');">[2]</span> ';
+	
+	$dictionaries="";
+	$sql = 'select name,URI,id from ' . $tbpref . 'ditionaries where languagesLgID = ' . $lang;
+$dics = do_mysql_query($sql);
+$counter=0;
+while($dic=mysql_fetch_assoc($dics)){
+$wb1 = $dics['URI'];
+	if(substr($wb1,0,1) == '*') $wb1 = substr($wb1,1);
+$dictionaries .= '<span class="click" onclick="translateWord3(' . prepare_textdata_js($wb1) . ',' . $wordctljs . ');">['.$counter.']</span> ';	
+$counter++;
+}
+	
+	$r ='<span class="smaller">'.$dictionaries;
+	//$r .= '<span class="click" onclick="translateWord3(' . prepare_textdata_js($wb1) . ',' . $wordctljs . ');">[1]</span> ';
 	if ($wb3 != "") 
 		$r .= '<span class="click" onclick="translateWord3(' . prepare_textdata_js($wb3) . ',' . $wordctljs . ');">[G]</span>'; 
 	$r .= '</span>';
@@ -1866,23 +1893,11 @@ function makeDictLinks($lang,$wordctljs) {
 // -------------------------------------------------------------
 
 function createDictLinksInEditWin3($lang,$sentctljs,$wordctljs) {
-	global $tbpref;
-	$sql = 'select LgDict1URI, LgDict2URI, LgGoogleTranslateURI from ' . $tbpref . 'languages where LgID = ' . $lang;
+	global $tbpref; //MUST
+	$sql = 'select LgGoogleTranslateURI from ' . $tbpref . 'languages where LgID = ' . $lang;
 	$res = do_mysql_query($sql);
 	$record = mysql_fetch_assoc($res);
 	
-	$wb1 = isset($record['LgDict1URI']) ? $record['LgDict1URI'] : "";
-	if(substr($wb1,0,1) == '*') 
-		$f1 = 'translateWord2(' . prepare_textdata_js(substr($wb1,1));
-	else 
-		$f1 = 'translateWord(' . prepare_textdata_js($wb1);
-		
-	$wb2 = isset($record['LgDict2URI']) ? $record['LgDict2URI'] : "";
-	if(substr($wb2,0,1) == '*') 
-		$f2 = 'translateWord2(' . prepare_textdata_js(substr($wb2,1));
-	else 
-		$f2 = 'translateWord(' . prepare_textdata_js($wb2);
-
 	$wb3 = isset($record['LgGoogleTranslateURI']) ? $record['LgGoogleTranslateURI'] : "";
 	if(substr($wb3,0,1) == '*') {
 		$f3 = 'translateWord2(' . prepare_textdata_js(substr($wb3,1));
@@ -1893,12 +1908,23 @@ function createDictLinksInEditWin3($lang,$sentctljs,$wordctljs) {
 	}
 
 	mysql_free_result($res);
+	
+	$dictionaries="";
+	$sql = 'select name,URI,id from ' . $tbpref . 'ditionaries where languagesLgID = ' . $lang;
+$dics = do_mysql_query($sql);
+$counter=0;
+while($dic=mysql_fetch_assoc($dics)){
+$wb1 = $dics['URI'];
+	if(substr($wb1,0,1) == '*') 
+		$f1 = 'translateWord2(' . prepare_textdata_js(substr($wb1,1));
+	else 
+		$f1 = 'translateWord(' . prepare_textdata_js($wb1);
+$dictionaries .='<span class="click" onclick="' . $f1 . ',' . $wordctljs . ');">'.$dics['name'].'</span> ';	
+$counter++;
+}	
 	$r ='';
-	$r .= 'Lookup Term: ';
-	$r .= '<span class="click" onclick="' . $f1 . ',' . $wordctljs . ');">Dict1</span> ';
-	if ($wb2 != "") 
-		$r .= '<span class="click" onclick="' . $f2 . ',' . $wordctljs . ');">Dict2</span> ';
-	if ($wb3 != "") 
+	$r .= 'Lookup Term: '.$dictionaries;
+if ($wb3 != "") 
 		$r .= '<span class="click" onclick="' . $f3 . ',' . $wordctljs . ');">GTr</span> | Sent.: <span class="click" onclick="' . $f4 . ',' . $sentctljs . ');">GTr</span>'; 
 	return $r;
 }
@@ -2101,6 +2127,15 @@ function mask_term_in_sentence_v2($s) {
 
 function repl_tab_nl($s) {
 	$s = str_replace(array("\r\n", "\r", "\n", "\t"), ' ', $s);
+	$s = preg_replace('/\s/u', ' ', $s);
+	$s = preg_replace('/\s{2,}/u', ' ', $s);
+	return trim($s);
+}
+
+// -------------------------------------------------------------
+
+function repl_tab_nl2($s) {
+	$s = str_replace(array("\r\n", "\r", "\t"), ' ', $s);
 	$s = preg_replace('/\s/u', ' ', $s);
 	$s = preg_replace('/\s{2,}/u', ' ', $s);
 	return trim($s);
@@ -2506,6 +2541,7 @@ function splitCheckText($text, $lid, $id) {
 		$r .= "<h4>Sentences</h4><ol>";
 		$sentNumber = 0;
 		foreach ($textLines as $value) { 
+		
 			$r .= "<li " .  ($rtlScript ? 'dir="rtl"' : '') . ">" . tohtml(remove_spaces($value, $removeSpaces)) . "</li>";
 			$lineWords[$sentNumber] = preg_split('/([^' . $termchar . ']{1,})/u', $value, -1, PREG_SPLIT_DELIM_CAPTURE );
 			$l = count($lineWords[$sentNumber]);
@@ -3143,7 +3179,7 @@ function check_update_db() {
 	
 	if (in_array($tbpref . 'languages', $tables) == FALSE) {
 		if ($debug) echo '<p>DEBUG: rebuilding languages</p>';
-		runsql("CREATE TABLE IF NOT EXISTS " . $tbpref . "languages ( LgID int(11) unsigned NOT NULL AUTO_INCREMENT, LgName varchar(40) NOT NULL, LgDict1URI varchar(200) NOT NULL, LgDict2URI varchar(200) DEFAULT NULL, LgGoogleTranslateURI varchar(200) DEFAULT NULL, LgExportTemplate varchar(1000) DEFAULT NULL, LgTextSize int(5) unsigned NOT NULL DEFAULT '100', LgCharacterSubstitutions varchar(500) NOT NULL, LgRegexpSplitSentences varchar(500) NOT NULL, LgExceptionsSplitSentences varchar(500) NOT NULL, LgRegexpWordCharacters varchar(500) NOT NULL, LgRemoveSpaces int(1) unsigned NOT NULL DEFAULT '0', LgSplitEachChar int(1) unsigned NOT NULL DEFAULT '0', LgRightToLeft int(1) unsigned NOT NULL DEFAULT '0', PRIMARY KEY (LgID), UNIQUE KEY LgName (LgName) ) ENGINE=MyISAM DEFAULT CHARSET=utf8",'');
+		runsql("CREATE TABLE IF NOT EXISTS " . $tbpref . "languages ( LgID int(11) unsigned NOT NULL AUTO_INCREMENT, LgName varchar(40) NOT NULL, LgGoogleTranslateURI varchar(200) DEFAULT NULL, LgExportTemplate varchar(1000) DEFAULT NULL, LgTextSize int(5) unsigned NOT NULL DEFAULT '100', LgCharacterSubstitutions varchar(500) NOT NULL, LgRegexpSplitSentences varchar(500) NOT NULL, LgExceptionsSplitSentences varchar(500) NOT NULL, LgRegexpWordCharacters varchar(500) NOT NULL, LgRemoveSpaces int(1) unsigned NOT NULL DEFAULT '0', LgSplitEachChar int(1) unsigned NOT NULL DEFAULT '0', LgRightToLeft int(1) unsigned NOT NULL DEFAULT '0', PRIMARY KEY (LgID), UNIQUE KEY LgName (LgName) ) ENGINE=MyISAM DEFAULT CHARSET=utf8",'');
 	}
 	
 	if (in_array($tbpref . 'sentences', $tables) == FALSE) {

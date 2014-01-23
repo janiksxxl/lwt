@@ -123,10 +123,8 @@ elseif (isset($_REQUEST['op'])) {
 	// INSERT
 	
 	if ($_REQUEST['op'] == 'Save')
-		$message = runsql('insert into ' . $tbpref . 'languages (LgName, LgDict1URI, LgDict2URI, LgGoogleTranslateURI, LgExportTemplate, LgTextSize, LgCharacterSubstitutions, LgRegexpSplitSentences, LgExceptionsSplitSentences, LgRegexpWordCharacters, LgRemoveSpaces, LgSplitEachChar, LgRightToLeft) values(' . 
+		$message = runsql('insert into ' . $tbpref . 'languages (LgName, LgGoogleTranslateURI, LgExportTemplate, LgTextSize, LgCharacterSubstitutions, LgRegexpSplitSentences, LgExceptionsSplitSentences, LgRegexpWordCharacters, LgRemoveSpaces, LgSplitEachChar, LgRightToLeft) values(' . 
 		convert_string_to_sqlsyntax($_REQUEST["LgName"]) . ', ' .
-		convert_string_to_sqlsyntax($_REQUEST["LgDict1URI"]) . ', '. 
-		convert_string_to_sqlsyntax($_REQUEST["LgDict2URI"]) . ', '.
 		convert_string_to_sqlsyntax($_REQUEST["LgGoogleTranslateURI"]) . ', '.
 		convert_string_to_sqlsyntax($_REQUEST["LgExportTemplate"]) . ', '.
 		$_REQUEST["LgTextSize"] . ', '.
@@ -172,8 +170,6 @@ elseif (isset($_REQUEST['op'])) {
 	
 		$message = runsql('update ' . $tbpref . 'languages set ' . 
 		'LgName = ' . convert_string_to_sqlsyntax($_REQUEST["LgName"]) . ', ' . 
-		'LgDict1URI = ' . convert_string_to_sqlsyntax($_REQUEST["LgDict1URI"]) . ', ' .
-		'LgDict2URI = ' . convert_string_to_sqlsyntax($_REQUEST["LgDict2URI"]) . ', ' .
 		'LgGoogleTranslateURI = ' . convert_string_to_sqlsyntax($_REQUEST["LgGoogleTranslateURI"]) . ', ' .
 		'LgExportTemplate = ' . convert_string_to_sqlsyntax($_REQUEST["LgExportTemplate"]) . ', ' .
 		'LgTextSize = ' . $_REQUEST["LgTextSize"] . ', ' .
@@ -234,14 +230,6 @@ if (isset($_REQUEST['new'])) {
 	<tr>
 	<td class="td1 right backlightyellow">Study Language "L2":</td>
 	<td class="td1"><input type="text" class="notempty setfocus" name="LgName" id="LgName" value="" maxlength="40" size="40" /> <img src="icn/status-busy.png" title="Field must not be empty" alt="Field must not be empty" /></td>
-	</tr>
-	<tr>
-	<td class="td1 right backlightyellow">Dictionary 1 URI:</td>
-	<td class="td1"><input type="text" class="notempty" name="LgDict1URI" value="glosbe_api.php?from=••&dest=••&phrase=###" maxlength="200" size="60" /> <img src="icn/status-busy.png" title="Field must not be empty" alt="Field must not be empty" /></td>
-	</tr>
-	<tr>
-	<td class="td1 right">Dictionary 2 URI:</td>
-	<td class="td1"><input type="text" name="LgDict2URI" value="" maxlength="200" size="60" /></td>
 	</tr>
 	<tr>
 	<td class="td1 right backlightyellow">GoogleTranslate URI:</td>
@@ -313,14 +301,6 @@ elseif (isset($_REQUEST['chg'])) {
 		<tr>
 		<td class="td1 right">Study Language "L2":</td>
 		<td class="td1"><input type="text" class="notempty setfocus" name="LgName" id="LgName" value="<?php echo tohtml($record['LgName']); ?>" maxlength="40" size="40" /> <img src="icn/status-busy.png" title="Field must not be empty" alt="Field must not be empty" /></td>
-		</tr>
-		<tr>
-		<td class="td1 right">Dictionary 1 URI:</td>
-		<td class="td1"><input type="text" class="notempty" name="LgDict1URI" value="<?php echo tohtml($record['LgDict1URI']); ?>"  maxlength="200" size="60" /> <img src="icn/status-busy.png" title="Field must not be empty" alt="Field must not be empty" /></td>
-		</tr>
-		<tr>
-		<td class="td1 right">Dictionary 2 URI:</td>
-		<td class="td1"><input type="text" name="LgDict2URI" value="<?php echo tohtml($record['LgDict2URI']); ?>"  maxlength="200" size="60" /></td>
 		</tr>
 		<tr>
 		<td class="td1 right">GoogleTranslate URI:</td>

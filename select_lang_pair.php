@@ -84,11 +84,7 @@ function wizard_go() {
 		wizard_exit();
 	}
 	var context = w.document;
-	$('input[name="LgName"]',context).val(l2);	
-	$('input[name="LgDict1URI"]',context).val(
-		'glosbe_api.php?from=' + LANGDEFS[l2][0] + '&dest=' + 
-		LANGDEFS[l1][0] + '&phrase=###'
-		);	
+	$('input[name="LgName"]',context).val(l2);		
 	$('input[name="LgGoogleTranslateURI"]',context).val(
 		'*http://translate.google.com/?ie=UTF-8&sl=' + 
 		LANGDEFS[l2][1] + '&tl=' + LANGDEFS[l1][1] + '&text=###'
