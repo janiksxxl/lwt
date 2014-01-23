@@ -41,6 +41,7 @@ var SOLUTION = '';
 var ADDFILTER = '';
 var RTL = 0;
 var ANN_ARRAY = {};
+var DOR=0;
  
 /**************************************************************
 LWT jQuery functions
@@ -375,8 +376,25 @@ function mword_click_event_do_text_text() {
 	return false;
 }
 
+function text_onmousedown_event_do_text_text(e,txt){
+DOR=$(e).attr('data_order');
+TID=txt;
+//alert(data_order);
+}
+
 function keydown_event_do_text_text(e) {
 
+if (e.which == 81) {  // esc = reset all
+var selObj = window.getSelection(); 
+	window.parent.frames['ro'].location.href = 
+			'edit_mword.php?tid='+TID+'&ord='+DOR+'&txt=' + encodeURIComponent(selObj.toString().trim());
+return false;
+		TEXTPOS = -1;
+		$('span.uwordmarked').removeClass('uwordmarked');
+		$('span.kwordmarked').removeClass('kwordmarked');
+		cClick();
+		
+	}
 	if (e.which == 27) {  // esc = reset all
 		TEXTPOS = -1;
 		$('span.uwordmarked').removeClass('uwordmarked');
