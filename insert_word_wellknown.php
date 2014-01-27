@@ -31,7 +31,7 @@ For more information, please refer to [http://unlicense.org/].
 ***************************************************************/
 
 /**************************************************************
-Call: insert_word_wellknown.php?tid=[textid]&ord=[textpos]
+Call: insert_word_wellknown.php?term=[term]&ord=[textpos]
 Ignore single word (new term with status 99)
 ***************************************************************/
 
@@ -40,12 +40,10 @@ require_once( 'connect.inc.php' );
 require_once( 'dbutils.inc.php' );
 require_once( 'utilities.inc.php' );
 
-$word = get_first_value("select TiText as value from " . $tbpref . "textitems where TiWordCount = 1 and TiTxID = " . $_REQUEST['tid'] . " and TiOrder = " . $_REQUEST['ord']);
-
+$word = $word =get_link_parameter("term",pathinfo(__FILE__, PATHINFO_BASENAME));
+$langid=get_link_parameter("lang",pathinfo(__FILE__, PATHINFO_BASENAME));
+//REPAIR remove WoTextLC
 $wordlc =	mb_strtolower($word, 'UTF-8');
-
-$langid = get_first_value("select TxLgID as value from " . $tbpref . "texts where TxID = " . $_REQUEST['tid']);
-
 pagestart("Term: " . $word,false);
 
 $m1 = runsql('insert into ' . $tbpref . 'words (WoLgID, WoText, WoTextLC, WoStatus, WoStatusChanged,' .  make_score_random_insert_update('iv') . ') values( ' . 

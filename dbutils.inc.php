@@ -34,6 +34,8 @@ For more information, please refer to [http://unlicense.org/].
 Database Utility Functions
 ***************************************************************/
 
+if (stristr(htmlentities($_SERVER['PHP_SELF']),pathinfo(__FILE__, PATHINFO_BASENAME))){die();}
+
 // -------------------------------------------------------------
 
 function do_mysql_query($sql) {

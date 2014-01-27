@@ -36,9 +36,12 @@ Set script time limit
 Start a PHP session if not one already exists
 ***************************************************************/
 
+if (stristr(htmlentities($_SERVER['PHP_SELF']),pathinfo(__FILE__, PATHINFO_BASENAME))){die();}
+
+
 $debug = 0;        // 1 = debugging on, 0 = .. off
 $dsplerrors = 0;   // 1 = display errors on, 0 = .. off
-$dspltime = 0;     // 1 = display time on, 0 = .. off
+$dspltime = 1;     // 1 = display time on, 0 = .. off
 
 if ($dsplerrors) {
 	@error_reporting(E_ALL);
@@ -50,10 +53,10 @@ if ($dsplerrors) {
 	@ini_set('display_startup_errors','0');
 }
 
-@ini_set('max_execution_time', '600');  // 10 min.
-@set_time_limit(600);  // 10 min.
+@ini_set('max_execution_time', '60');  // 10 min.
+@set_time_limit(60);  // 10 min.
 
-@ini_set('memory_limit', '999M');  
+@ini_set('memory_limit', '99M');  
 
 if(session_id() == '') {
 	// session isn't started

@@ -42,6 +42,8 @@ var ADDFILTER = '';
 var RTL = 0;
 var ANN_ARRAY = {};
 var DOR=0;
+var DLANG=0;
+var DSENT=0;
  
 /**************************************************************
 LWT jQuery functions
@@ -220,11 +222,11 @@ function word_click_event_do_test_test() {
 	run_overlib_test(
 		DICTS,WBLINK3, 
 		$(this).attr('data_wid'),
-		$(this).attr('data_text'),
+		encodeURIComponent($(this).text()),
 		$(this).attr('data_trans'),
 		$(this).attr('data_rom'),
 		$(this).attr('data_status'),
-		$(this).attr('data_sent'),
+		$(this).parent().attr('data_sentence_id'),
 		$(this).attr('data_todo'));
 	$('.todo').text(SOLUTION);
 	return false;
@@ -295,7 +297,7 @@ function word_each_do_text_text(i) {
 
 function mword_each_do_text_text(i) {
 	if ($(this).attr('data_status') != '') {
-		this.title = make_tooltip($(this).attr('data_text'), 
+		this.title = make_tooltip($(this).text(), 
 		$(this).attr('data_trans'), $(this).attr('data_rom'), 
 		$(this).attr('data_status'));
 		var wid = $(this).attr('data_wid');
@@ -335,31 +337,31 @@ this.className = this.className + " addActive";
 		
 	if ( status < 1 ) {
 		run_overlib_status_unknown(DICTS,WBLINK3,$(this).attr('title'),
-			TID,$(this).attr('data_order'),$(this).text(),$(this).attr('data_mw2'),
+			TID,$(this).attr('data_order'),encodeURIComponent($(this).text()),$(this).attr('data_mw2'),
 			$(this).attr('data_mw3'),$(this).attr('data_mw4'),$(this).attr('data_mw5'),
 			$(this).attr('data_mw6'),$(this).attr('data_mw7'),$(this).attr('data_mw8'),
-			$(this).attr('data_mw9'),RTL);
+			$(this).attr('data_mw9'),RTL,$(this).parent().attr('data_language_id'),$(this).parent().attr('data_sentence_id'));
 		top.frames['ro'].location.href='edit_word.php?tid=' + TID + '&ord=' + 
-			$(this).attr('data_order') + '&wid=';
+			$(this).attr('data_order') + '&txt='+encodeURIComponent($(this).text())+'&lang='+$(this).parent().attr('data_language_id')+'&seid='+$(this).parent().attr('data_sentence_id')+'&wid=';
 	}
 	else if ( status == 99 )
 		run_overlib_status_99(DICTS,WBLINK3,$(this).attr('title'),
 			TID,$(this).attr('data_order'),$(this).text(),$(this).attr('data_wid'),
 			$(this).attr('data_mw2'),$(this).attr('data_mw3'),$(this).attr('data_mw4'),
 			$(this).attr('data_mw5'),$(this).attr('data_mw6'),$(this).attr('data_mw7'),
-			$(this).attr('data_mw8'),$(this).attr('data_mw9'),RTL,ann);
+			$(this).attr('data_mw8'),$(this).attr('data_mw9'),RTL,ann,$(this).parent().attr('data_language_id'),$(this).parent().attr('data_sentence_id'));
 	else if ( status == 98 )
 		run_overlib_status_98(DICTS,WBLINK3,$(this).attr('title'),
 			TID,$(this).attr('data_order'),$(this).text(),$(this).attr('data_wid'),
 			$(this).attr('data_mw2'),$(this).attr('data_mw3'),$(this).attr('data_mw4'),
 			$(this).attr('data_mw5'),$(this).attr('data_mw6'),$(this).attr('data_mw7'),
-			$(this).attr('data_mw8'),$(this).attr('data_mw9'),RTL,ann);
+			$(this).attr('data_mw8'),$(this).attr('data_mw9'),RTL,ann,$(this).parent().attr('data_language_id'),$(this).parent().attr('data_sentence_id'));
 	else
 		run_overlib_status_1_to_5(DICTS,WBLINK3,$(this).attr('title'),
 			TID,$(this).attr('data_order'),$(this).text(),$(this).attr('data_wid'),status,
 			$(this).attr('data_mw2'),$(this).attr('data_mw3'),$(this).attr('data_mw4'),
 			$(this).attr('data_mw5'),$(this).attr('data_mw6'),$(this).attr('data_mw7'),
-			$(this).attr('data_mw8'),$(this).attr('data_mw9'),RTL,ann);
+			$(this).attr('data_mw8'),$(this).attr('data_mw9'),RTL,ann,$(this).parent().attr('data_language_id'),$(this).parent().attr('data_sentence_id'));
 	return false;
 }
 	
@@ -370,24 +372,115 @@ function mword_click_event_do_text_text() {
 		if ((typeof $(this).attr('data_ann')) != 'undefined') 
 			ann = $(this).attr('data_ann');
 		run_overlib_multiword(DICTS,WBLINK3,$(this).attr('title'),
-		TID, $(this).attr('data_order'),$(this).attr('data_text'),
+		TID, $(this).attr('data_order'),$(this).text(),
 		$(this).attr('data_wid'), status,$(this).attr('data_code'), ann);
 	}
 	return false;
 }
 
+function mword_click_event_do_text_text_(it,DICTS) {
+	var status = $(it).attr('data_status');
+	if (status != '') {
+		var ann = '';
+		if ((typeof $(it).attr('data_ann')) != 'undefined') 
+			ann = $(it).attr('data_ann');
+		run_overlib_multiword(DICTS,WBLINK3,$(it).attr('title'),
+		TID, $(it).attr('data_order'),encodeURIComponent($(it).text()),
+		$(it).attr('data_wid'), status,$(it).attr('data_code'), ann);
+	}
+	return false;
+}
+
+var DSPLIT=0;
 function text_onmousedown_event_do_text_text(e,txt){
 DOR=$(e).attr('data_order');
 TID=txt;
+DLANG=$(e).parent().attr('data_language_id');
+DSENT=$(e).parent().attr('data_sentence_id');
+DSPLIT=$(e).parent().parent().attr('data_language_split');
 //alert(data_order);
+}
+function fillGroupA(context,items,replace){
+ids=[0,0,0,0,0];
+var basea = context.getElementById("container").childNodes;
+inSearch=0;
+
+
+}
+
+function clearGroupA(context,items,replace){
+ids=[null,null,null,null,null];
+alert(items);
+var basea = context.getElementById("text-container").childNodes;
+inSearch=0;
+for(var i = 0; i < basea.length; i++){
+if(basea[i].nodeType == 1 && items[inSearch]==basea[i].getAttribute("data_word")){
+alert(basea[i].getAttribute("data_word"));
+ids[inSearch]=basea[i];
+if(inSearch==items.length-1){
+BaseId=ids[0];
+for(var j = 0; j < items.length; j++){
+//alert(ids[j].attr("word_id"));
+wordClear(ids[j]);
+ids[j]=null;
+}
+$(BaseId).html(replace.replace(/idxa/,BaseId));
+$('.mword',context).click(mword_click_event_do_text_text);
+inSearch=0;
+}
+inSearch++;
+}else{
+inSearch=0;
+ids[0]=null;
+}
+//}catch(e){}
+}
+}
+
+function wordClear(id){
+$(id).html("");
+}
+function buildMultiTerm(size,wid,term,termcl,textid,transl,status,rom){
+var text='<span id="ID-idxa-'+size+'" class="click mword wsty orderidxa word'+wid+' status'+status+' TERM'+termcl+'" \
+ onclick="mword_click_event_do_text_text_(this,DICTS)" onmousedown="text_onmousedown_event_do_text_text(this,'+textid+')"\
+ data_code="'+size+'" data_status="'+status+'" data_rom="'+rom+'" \
+ data_trans="'+transl+'"\
+ data_wid="'+wid+'" data_order="idxa" data_pos="480"\
+ title="'+term+' ▶ '+rom+' ▶ '+transl+' ▶ Learning ['+status+']" \
+ >'+term+'</span>';
+ return text;
+}
+
+function getSubstitute(sample){
+results=[];
+term="";
+for(i=0;i<sample.length;i++){
+temp="";
+	for(j=0;j<sample.length-i;j++){
+	term="";
+	jump=0;
+		for(k=0;k<sample.length-i-j;k++){
+		jump++;
+		 term=term+sample[i+k];
+		}
+		if (dictionary.hasOwnProperty(term)){temp=term;results.push(term);results.push(jump);;i=i+jump-1; }
+	}
+	if(temp==""){results.push(sample[i]);results.push(1);}
+}
+return results;
 }
 
 function keydown_event_do_text_text(e) {
 
 if (e.which == 81) {  // esc = reset all
+var sample=["孤","孤","じ","ゃ","辛","い","の","に"];
+//alert(getSubstitute(sample));
+//wordClear(1);
+//clearGroupA(document,["le"," ","temps",],buildMultiTerm(548,2,99,"ない","ない",31,"something here",3,"ない"));
+//return false;
 var selObj = window.getSelection(); 
 	window.parent.frames['ro'].location.href = 
-			'edit_mword.php?tid='+TID+'&ord='+DOR+'&txt=' + encodeURIComponent(selObj.toString().trim());
+			'edit_mword.php?tid='+TID+'&ord='+DOR+'&lang='+DLANG+'&seid='+DSENT+'&split='+DSPLIT+'&txt=' + encodeURIComponent(selObj.toString().trim());
 return false;
 		TEXTPOS = -1;
 		$('span.uwordmarked').removeClass('uwordmarked');

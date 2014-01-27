@@ -34,6 +34,7 @@ For more information, please refer to [http://unlicense.org/].
 PHP Utility Functions
 Plus (at end): Database Connect, .. Select, .. Updates
 ***************************************************************/
+if (stristr(htmlentities($_SERVER['PHP_SELF']),pathinfo(__FILE__, PATHINFO_BASENAME))){die();}
 
 // -------------------------------------------------------------
 
@@ -836,12 +837,11 @@ function optimizedb() {
 	adjust_autoincr('archivedtexts','AtID');
 	adjust_autoincr('languages','LgID');
 	adjust_autoincr('sentences','SeID');
-	adjust_autoincr('textitems','TiID');
 	adjust_autoincr('texts','TxID');
 	adjust_autoincr('words','WoID');
 	adjust_autoincr('tags','TgID');
 	adjust_autoincr('tags2','T2ID');
-	$dummy = runsql('OPTIMIZE TABLE ' . $tbpref . 'archivedtexts,' . $tbpref . 'languages,' . $tbpref . 'sentences,' . $tbpref . 'textitems,' . $tbpref . 'texts,' . $tbpref . 'words,' . $tbpref . 'settings,' . $tbpref . 'tags,' . $tbpref . 'wordtags,' . $tbpref . 'tags2,' . $tbpref . 'texttags,' . $tbpref . 'archtexttags, _lwtgeneral', '');
+	$dummy = runsql('OPTIMIZE TABLE ' . $tbpref . 'archivedtexts,' . $tbpref . 'languages,' . $tbpref . 'sentences,' . $tbpref . 'texts,' . $tbpref . 'words,' . $tbpref . 'settings,' . $tbpref . 'tags,' . $tbpref . 'wordtags,' . $tbpref . 'tags2,' . $tbpref . 'texttags,' . $tbpref . 'archtexttags, _lwtgeneral', '');
 }
 
 // -------------------------------------------------------------
@@ -1759,7 +1759,7 @@ function createDictLinksInEditWin($lang,$word,$sentctljs,$openfirst) {
 	$r ='';
 	
 	$dictionaries="";
-	$sql = 'select name,URI,id from ' . $tbpref . 'ditionaries where languagesLgID = ' . $lang;
+	$sql = 'select name,URI,id from ' . $tbpref . 'dictionaries where languagesLgID = ' . $lang;
 $dics = do_mysql_query($sql);
 $count=0;
 $defDicURI="";
@@ -1955,7 +1955,30 @@ function strToHex($string)
 }
 
 // -------------------------------------------------------------
+function get_link_parameter($name="",$from=""){
+if(isset($_GET[$name])){
 
+return $_GET[$name];
+}
+else{my_die("Parameter $name not defined ".(($from=="")?"":"in $from"));}
+}
+
+function preWordManipulationInJs(){
+$temp="";
+$temp.='<script type="text/javascript">';
+$temp.='//<![CDATA[';
+$temp.="var context = window.parent.frames['l'].document;";
+$temp.="var contexth = window.parent.frames['h'].document;";
+return temp;
+}
+function postWordManipulationInJs(){
+$temp="";
+$temp.="window.parent.frames['l'].focus();";
+$temp.="window.parent.frames['l'].setTimeout('cClick()', 100);";
+$temp.='//]]>';
+$temp.='</script>';
+return temp;
+}
 function strToClassName($string)
 {
 	// escapes everything to "¤xx" but not 0-9, a-z, A-Z, and unicode >= (hex 00A5, dec 165)
@@ -2168,6 +2191,8 @@ function mask_term_in_sentence($s,$regexword) {
 // -------------------------------------------------------------
 
 function textwordcount($text) {
+return 0;
+die("TEXTITEMStextwordcount");
 	global $tbpref;
 	return get_first_value('select count(distinct TiTextLC) as value from ' . $tbpref . 'textitems where TiIsNotWord = 0 and TiWordCount = 1 and TiTxID = ' . $text);
 }
@@ -2175,6 +2200,8 @@ function textwordcount($text) {
 // -------------------------------------------------------------
 
 function textexprcount($text) {
+return 0;
+die("TEXTITEMStextexprcount");
 	global $tbpref;
 	return get_first_value('select count(distinct TiTextLC) as value from ' . $tbpref . 'textitems left join ' . $tbpref . 'words on TiTextLC = WoTextLC where TiWordCount > 1 and TiIsNotWord = 0 and TiTxID = ' . $text . ' and WoID is not null and TiLgID = WoLgID');
 }
@@ -2182,6 +2209,8 @@ function textexprcount($text) {
 // -------------------------------------------------------------
 
 function textworkcount($text) {
+return 0;
+die("TEXTITEMStextworkcount");
 	global $tbpref;
 	return get_first_value('select count(distinct TiTextLC) as value from ' . $tbpref . 'textitems left join ' . $tbpref . 'words on TiTextLC = WoTextLC where TiWordCount = 1 and TiIsNotWord = 0 and TiTxID = ' . $text . ' and WoID is not null and TiLgID = WoLgID');
 }
@@ -2189,13 +2218,54 @@ function textworkcount($text) {
 // -------------------------------------------------------------
 
 function texttodocount($text) {
+return 0;
 	return '<span title="To Do" class="status0">&nbsp;' . 
 	(textwordcount($text) - textworkcount($text)) . '&nbsp;</span>';
 }
 
 // -------------------------------------------------------------
+function getCharArray3 ($jstring)
+{
+  if (mb_strlen ($jstring, 'UTF-8') == 0)
+    return array();
+ 
+  $ret  = array ();
+  $alen = strlen ($jstring);
+  $char = '';
+  for ($i = 0; $i < $alen; $i++) {
+    $char .= $jstring[$i];
+    if (mb_check_encoding ($char, 'UTF-8')) {
+      array_push ($ret, $char);
+      $char = '';
+    }
+  }
+ 
+  return $ret;
+}
+
+    function trim_( $string = '' , $chrs = "" ) {
+        //Make the removable characters array index, for faster look-up later
+        $chrs    = array_flip( str_split( $chrs ) );
+        $count   = 0;
+       
+        while( isset( $string[0] ) && isset( $chrs[ $string[0] ] ) ) {
+            $string = substr( $string , 1 );
+        }
+       
+        $length  = strlen( $string );
+       
+        while( $length && isset( $chrs[ $string[ $length - 1 ] ] ) ) {
+            $string = substr( $string , 0 , -1 );
+            --$length;
+        }
+       
+        return $string;
+    }
+
 
 function texttodocount2($text) {
+//REPAIR
+return '<span title="To Do" class="status0">&nbsp;' . $c . '&nbsp;</span>';
 	$c = textwordcount($text) - textworkcount($text);
 	if ($c > 0 ) 
 		return '<span title="To Do" class="status0">&nbsp;' . $c . '&nbsp;</span>&nbsp;&nbsp;&nbsp;<input type="button" onclick="iknowall(' . $text . ');" value=" I KNOW ALL " />';
@@ -2205,8 +2275,10 @@ function texttodocount2($text) {
 
 // -------------------------------------------------------------
 
-function getSentence($seid, $wordlc,$mode) {
+function getSentence($seid, $word,$mode) {
+//die("TEXTITEMS-get-sentence");
 	global $tbpref;
+	$txt = get_first_value('select SeSplit as value from ' . $tbpref . 'sentences where SeID = ' . $seid);
 	$txtid = get_first_value('select SeTxID as value from ' . $tbpref . 'sentences where SeID = ' . $seid);
 	$seidlist = $seid;
 	if ($mode > 1) {
@@ -2217,68 +2289,53 @@ function getSentence($seid, $wordlc,$mode) {
 			if (isset($nextseid)) $seidlist .= ',' . $nextseid;
 		}
 	}
-	$sql2 = 'SELECT TiText, TiTextLC, TiWordCount, TiIsNotWord FROM ' . $tbpref . 'textitems WHERE TiSeID in (' . $seidlist . ') and TiTxID=' . $txtid . ' order by TiOrder asc, TiWordCount desc';
+	$sql2 = 'SELECT SeSplit FROM ' . $tbpref . 'sentences WHERE SeID in (' . $seidlist . ')';
 	$res2 = do_mysql_query($sql2);
 	$sejs=''; 
 	$se='';
-	$notfound = 1;
-	$jump=0;
+	$seTemp='';
 	while ($record2 = mysql_fetch_assoc($res2)) {
-		if ($record2['TiIsNotWord'] == 1) {
-			$jump--;
-			if ($jump < 0) {
-				$sejs .= $record2['TiText']; 
-				$se .= tohtml($record2['TiText']);
-			} 
-		}	else {
-			if (($jump-1) < 0) {
-				if ($notfound) {
-					if ($record2['TiTextLC'] == $wordlc) { 
-						$sejs.='{'; 
-						$se.='<b>'; 
-						$sejs .= $record2['TiText']; 
-						$se .= tohtml($record2['TiText']); 
-						$sejs.='}'; 
-						$se.='</b>';
-						$notfound = 0;
-						$jump=($record2['TiWordCount']-1)*2; 
-					}
-				}
-				if ($record2['TiWordCount'] == 1) {
-					if ($notfound) {
-						$sejs .= $record2['TiText']; 
-						$se .= tohtml($record2['TiText']);
-						$jump=0;  
-					}	else {
-						$notfound = 1;
-					}
-				}
-			} else {
-				if ($record2['TiWordCount'] == 1) $jump--; 
-			}
-		}
+	$seTemp.=$record2['SeSplit'].';';
 	}
+	
 	mysql_free_result($res2);
-	return array($se,$sejs); // [0]=html, word in bold
+	return array(str_replace(';','',str_replace($word,'<b>'.$word.'</b>',$seTemp)),str_replace(';','',str_replace($word,'{'.$word.'}',$seTemp))); // [0]=html, word in bold
 	                         // [1]=text, word in {} 
 }
 
+function getSentenceTemp($seid, $wordlc,$mode,$word) {
+	global $tbpref;
+	$txt = get_first_value('select SeText as value from ' . $tbpref . 'sentences where SeID = ' . $seid);
+	$seidlist = $seid;
+	if ($mode > 1) {
+		$prevseid = get_first_value('select SeID as value from ' . $tbpref . 'sentences where SeID < ' . $seid . ' and SeTxID = ' . $txtid . " and trim(SeText) not in ('¶','') order by SeID desc");
+		if (isset($prevseid)) $seidlist .= ',' . $prevseid;
+		if ($mode > 2) {
+			$nextseid = get_first_value('select SeID as value from ' . $tbpref . 'sentences where SeID > ' . $seid . ' and SeTxID = ' . $txtid . " and trim(SeText) not in ('¶','') order by SeID asc");
+			if (isset($nextseid)) $seidlist .= ',' . $nextseid;
+		}
+	}
+	return array($txt,$txt); // [0]=html, word in bold
+	                         // [1]=text, word in {} 
+}
 // -------------------------------------------------------------
 
 function get20Sentences($lang, $wordlc, $jsctlname, $mode) {
 	global $tbpref;
 	$r = '<p><b>Sentences in active texts with <i>' . tohtml($wordlc) . '</i></b></p><p>(Click on <img src="icn/tick-button.png" title="Choose" alt="Choose" /> to copy sentence into above term)</p>';
-	$sql = 'SELECT DISTINCT SeID, SeText FROM ' . $tbpref . 'sentences, ' . $tbpref . 'textitems WHERE TiTextLC = ' . convert_string_to_sqlsyntax($wordlc) . ' AND SeID = TiSeID AND SeLgID = ' . $lang . ' order by CHAR_LENGTH(SeText), SeText limit 0,20';
+	$sql = 'SELECT DISTINCT SeSplit, SeID  FROM ' . $tbpref . 'sentences WHERE SeSplit LIKE "' .$wordlc. ';%" OR SeSplit LIKE "%;' .$wordlc. '" OR SeSplit LIKE "%;' .$wordlc. ';%" AND SeLgID = ' . $lang . ' order by CHAR_LENGTH(SeSplit), SeSplit limit 0,20';
 	$res = do_mysql_query($sql);
 	$r .= '<p>';
-	$last = '';
+	$done=array();
 	while ($record = mysql_fetch_assoc($res)) {
-		if ($last != $record['SeText']) {
+	echo "a".$record['SeSplit']."a";
+		if (!in_array($record['SeSplit'],$done)) {
+		$done[]=$record['SeSplit'];
 			$sent = getSentence($record['SeID'], $wordlc,$mode);
 			$r .= '<span class="click" onclick="{' . $jsctlname . '.value=' . prepare_textdata_js($sent[1]) . '; makeDirty();}"><img src="icn/tick-button.png" title="Choose" alt="Choose" /></span> &nbsp;' . $sent[0] . '<br />';
 		}
-		$last = $record['SeText'];
 	}
+	var_dump($done);
 	mysql_free_result($res);
 	$r .= '</p>';
 	return $r;
@@ -2302,8 +2359,9 @@ function getsqlscoreformula ($method) {
 // -------------------------------------------------------------
 
 function AreUnknownWordsInSentence ($sentno) {
+die("TEXTITEMS -are-unknown-words");
 	global $tbpref;
-	$x = get_first_value("SELECT distinct ifnull(WoTextLC,'') as value FROM (" . $tbpref . "textitems left join " . $tbpref . "words on (TiTextLC = WoTextLC) and (TiLgID = WoLgID)) where TiSeID = " . $sentno . " AND TiWordCount = 1 AND TiIsNotWord = 0 order by WoTextLC asc limit 1");
+	$x = get_first_value("SELECT distinct ifnull(WoTextLC,'') as value FROM (" . $tbpref . "texxtitems left join " . $tbpref . "words on (TiTextLC = WoTextLC) and (TiLgID = WoLgID)) where TiSeID = " . $sentno . " AND TiWordCount = 1 AND TiIsNotWord = 0 order by WoTextLC asc limit 1");
 	// echo $sentno . '/' . isset($x) . '/' . $x . '/';
 	if ( isset($x) ) {
 		if ( $x == '' ) return true;
@@ -2399,9 +2457,7 @@ function get_setting_data() {
 function reparse_all_texts() {
 	global $tbpref;
 	runsql('TRUNCATE ' . $tbpref . 'sentences','');
-	runsql('TRUNCATE ' . $tbpref . 'textitems','');
 	adjust_autoincr('sentences','SeID');
-	adjust_autoincr('textitems','TiID');
 	$sql = "select TxID, TxLgID from " . $tbpref . "texts";
 	$res = do_mysql_query($sql);
 	while ($record = mysql_fetch_assoc($res)) {
@@ -2449,6 +2505,13 @@ function echodebug($var,$text) {
 }
 
 // -------------------------------------------------------------
+
+function sizeSort($a,$b){
+     if (strlen($a) == strlen($b)) {
+        return 0;
+    }
+    return (strlen($a) < strlen($b)) ? 1 : -1;
+}
 
 function splitCheckText($text, $lid, $id) {   
 	// $id = -1     => Check, return protocol
@@ -2598,74 +2661,21 @@ function splitCheckText($text, $lid, $id) {
 	$sentNumber = 0;
 	$lfdnr =0;
 
+	$wordsToCount=array();
+	
 	foreach ($textLines as $value) { 
-		
-		$dummy = runsql('INSERT INTO ' . $tbpref . 'sentences (SeLgID, SeTxID, SeOrder, SeText) VALUES (' . $lid . ',' .  $id . ',' .  ($sentNumber+1) . ',' . convert_string_to_sqlsyntax_notrim_nonull(remove_spaces($value . ' ', $removeSpaces)) . ')', ' ');
 		$sentid = get_last_key();
-		$lineWords[$sentNumber] = preg_split('/([^' . $termchar . ']+)/u', $value . ' ', null, PREG_SPLIT_DELIM_CAPTURE );
+		$lineWords[$sentNumber] = preg_split('/([^' . $termchar . ']+)/u', $value, null, PREG_SPLIT_DELIM_CAPTURE|PREG_SPLIT_NO_EMPTY );
 		$l = count($lineWords[$sentNumber]);
-		$sqltext = 'INSERT INTO ' . $tbpref . 'textitems (TiLgID, TiTxID, TiSeID, TiOrder, TiWordCount, TiText, TiTextLC, TiIsNotWord) VALUES ';
-		$lfdnr1=0;
-		for ($i=0; $i<$l; $i++) {
-			$term = mb_strtolower($lineWords[$sentNumber][$i], 'UTF-8');
-			$rest2 = '';
-			$rest3 = '';
-			$rest4 = '';
-			$rest5 = '';
-			$rest6 = '';
-			$rest7 = '';
-			$rest8 = '';
-			$rest9 = '';
-			$restlc2 = '';
-			$restlc3 = '';
-			$restlc4 = '';
-			$restlc5 = '';
-			$restlc6 = '';
-			$restlc7 = '';
-			$restlc8 = '';
-			$restlc9 = '';
-			if ($term != '') {
-				if ($i % 2 == 0) {
-					$isnotwort=0;
-					$rest = $lineWords[$sentNumber][$i];
-					$cnt = 0;
-					for ($j=$i+1; $j<$l; $j++) {
-						if ($lineWords[$sentNumber][$j] != '') {
-							$rest .= $lineWords[$sentNumber][$j]; $cnt++;
-							if($cnt == 2) { $rest2 = $rest; $restlc2 = mb_strtolower($rest, 'UTF-8'); }
-							if($cnt == 4) { $rest3 = $rest; $restlc3 = mb_strtolower($rest, 'UTF-8'); }
-							if($cnt == 6) { $rest4 = $rest; $restlc4 = mb_strtolower($rest, 'UTF-8'); }
-							if($cnt == 8) { $rest5 = $rest; $restlc5 = mb_strtolower($rest, 'UTF-8'); }
-							if($cnt == 10) { $rest6 = $rest; $restlc6 = mb_strtolower($rest, 'UTF-8'); }
-							if($cnt == 12) { $rest7 = $rest; $restlc7 = mb_strtolower($rest, 'UTF-8'); }
-							if($cnt == 14) { $rest8 = $rest; $restlc8 = mb_strtolower($rest, 'UTF-8'); }
-							if($cnt == 16) { $rest9 = $rest; $restlc9 = mb_strtolower($rest, 'UTF-8'); break; }
-						}
-					}
-				} else {
-					$isnotwort=1;
-				}
-				
-				$lfdnr++;
-				$lfdnr1++;
-				if ($lfdnr1 > 1) $sqltext .= ',';
-				$sqltext .= '(' . $lid . ',' .  $id . ',' .  $sentid . ',' . $lfdnr . ', 1, ' . convert_string_to_sqlsyntax_notrim_nonull(remove_spaces($lineWords[$sentNumber][$i], $removeSpaces)) . ',' . convert_string_to_sqlsyntax_notrim_nonull(remove_spaces($term, $removeSpaces)) . ',' . $isnotwort . ')';
-				if ($isnotwort==0) {
-					if ($rest2 != '') $sqltext .= ',(' . $lid . ',' .  $id . ',' .  $sentid . ',' . $lfdnr . ', 2, ' . convert_string_to_sqlsyntax_notrim_nonull(remove_spaces($rest2, $removeSpaces)) . ',' . convert_string_to_sqlsyntax_notrim_nonull(remove_spaces($restlc2, $removeSpaces)) . ',' . $isnotwort . ')';
-					if ($rest3 != '') $sqltext .= ',(' . $lid . ',' .  $id . ',' .  $sentid . ',' . $lfdnr . ', 3, ' . convert_string_to_sqlsyntax_notrim_nonull(remove_spaces($rest3, $removeSpaces)) . ',' . convert_string_to_sqlsyntax_notrim_nonull(remove_spaces($restlc3, $removeSpaces)) . ',' . $isnotwort . ')';
-					if ($rest4 != '') $sqltext .= ',(' . $lid . ',' .  $id . ',' .  $sentid . ',' . $lfdnr . ', 4, ' . convert_string_to_sqlsyntax_notrim_nonull(remove_spaces($rest4, $removeSpaces)) . ',' . convert_string_to_sqlsyntax_notrim_nonull(remove_spaces($restlc4, $removeSpaces)) . ',' . $isnotwort . ')';
-					if ($rest5 != '') $sqltext .= ',(' . $lid . ',' .  $id . ',' .  $sentid . ',' . $lfdnr . ', 5, ' . convert_string_to_sqlsyntax_notrim_nonull(remove_spaces($rest5, $removeSpaces)) . ',' . convert_string_to_sqlsyntax_notrim_nonull(remove_spaces($restlc5, $removeSpaces)) . ',' . $isnotwort . ')';
-					if ($rest6 != '') $sqltext .= ',(' . $lid . ',' .  $id . ',' .  $sentid . ',' . $lfdnr . ', 6, ' . convert_string_to_sqlsyntax_notrim_nonull(remove_spaces($rest6, $removeSpaces)) . ',' . convert_string_to_sqlsyntax_notrim_nonull(remove_spaces($restlc6, $removeSpaces)) . ',' . $isnotwort . ')';
-					if ($rest7 != '') $sqltext .= ',(' . $lid . ',' .  $id . ',' .  $sentid . ',' . $lfdnr . ', 7, ' . convert_string_to_sqlsyntax_notrim_nonull(remove_spaces($rest7, $removeSpaces)) . ',' . convert_string_to_sqlsyntax_notrim_nonull(remove_spaces($restlc7, $removeSpaces)) . ',' . $isnotwort . ')';
-					if ($rest8 != '') $sqltext .= ',(' . $lid . ',' .  $id . ',' .  $sentid . ',' . $lfdnr . ', 8, ' . convert_string_to_sqlsyntax_notrim_nonull(remove_spaces($rest8, $removeSpaces)) . ',' . convert_string_to_sqlsyntax_notrim_nonull(remove_spaces($restlc8, $removeSpaces)) . ',' . $isnotwort . ')';
-					if ($rest9 != '') $sqltext .= ',(' . $lid . ',' .  $id . ',' .  $sentid . ',' . $lfdnr . ', 9, ' . convert_string_to_sqlsyntax_notrim_nonull(remove_spaces($rest9, $removeSpaces)) . ',' . convert_string_to_sqlsyntax_notrim_nonull(remove_spaces($restlc9, $removeSpaces)) . ',' . $isnotwort . ')';
-				}
-			}
-		}
-		if ($lfdnr > 0) $dummy = runsql($sqltext,'');
+		$dummy = runsql('INSERT INTO ' . $tbpref . 'sentences (SeLgID, SeTxID, SeOrder, SeText, SeSplit) VALUES (' . $lid . ',' .  $id . ',' .  ($sentNumber+1) . ',' . convert_string_to_sqlsyntax_notrim_nonull(remove_spaces($value . ' ', $removeSpaces)) . ','.convert_string_to_sqlsyntax_notrim_nonull(($removeSpaces)?(str_replace("; ;",";",implode(';',$lineWords[$sentNumber]))):(implode(';',$lineWords[$sentNumber]))).')', ' ');
+		$wordsToCount=array_merge($wordsToCount,$lineWords[$sentNumber]);
 		$sentNumber += 1;
-	} 
-
+		
+	}
+	$length=count($wordsToCount);
+	$wordsToCount=array_unique($wordsToCount);
+	$count= count($wordsToCount);
+	$dummy=runsql('UPDATE ' . $tbpref . 'texts SET words='.$count.',length='.($length/2).' WHERE TxID='.$id);
 }
 
 // -------------------------------------------------------------
@@ -2767,6 +2777,7 @@ function recreate_save_ann($textid, $oldann) {
 // -------------------------------------------------------------
 
 function create_ann($textid) {
+die("TEXTITEMS-create-ann");
 	global $tbpref;
 	$ann = '';
 	$sql = 'select TiWordCount as Code, TiText, TiOrder, TiIsNotWord, WoID, WoTranslation from (' . $tbpref . 'textitems left join ' . $tbpref . 'words on (TiTextLC = WoTextLC) and (TiLgID = WoLgID)) where TiTxID = ' . $textid . ' and (not (TiWordCount > 1 and WoID is null)) order by TiOrder asc, TiWordCount desc';
@@ -3089,6 +3100,7 @@ function make_score_random_insert_update($type) {  // $type='iv'/'id'/'u'
 // -------------------------------------------------------------
 
 function refreshText($word,$tid) {
+die("TEXTITEMS-refresh-text");
 	global $tbpref;
 	// $word : only sentences with $word
 	// $tid : textid

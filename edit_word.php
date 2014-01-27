@@ -50,7 +50,7 @@ if ( $translation_raw == '' ) $translation = '*';
 else $translation = $translation_raw;
 
 $fromAnn = getreq("fromAnn"); // from-recno or empty
-
+$lang=0;$seid=0;$term="";
 // INS/UPD
 
 if (isset($_REQUEST['op'])) {
@@ -177,17 +177,13 @@ else {  // if (! isset($_REQUEST['op']))
 	$wid = getreq('wid');
 	
 	if ($wid == '') {
-
-		$sql = 'select TiText, TiLgID from ' . $tbpref . 'textitems where TiTxID = ' . $_REQUEST['tid'] . ' and TiWordCount = 1 and TiOrder = ' . $_REQUEST['ord'];
-		$res = do_mysql_query($sql);
-		$record = mysql_fetch_assoc($res);
-		if ($record) {
-			$term = $record['TiText'];
-			$lang = $record['TiLgID'];
+		if (isset($_GET['lang']) && isset($_GET['txt']) && isset($_GET['seid'])) {
+			$term = $_GET['txt'];
+			$lang = $_GET['lang'];
+			$seid = $_GET['seid'];
 		} else {
 			my_die("Cannot access Term and Language in edit_word.php");
 		}
-		mysql_free_result($res);
 		
 		$termlc =	mb_strtolower($term, 'UTF-8');
 		
@@ -222,8 +218,7 @@ else {  // if (! isset($_REQUEST['op']))
 	
 	if ($new) {
 		
-		$seid = get_first_value("select TiSeID as value from " . $tbpref . "textitems where TiTxID = " . $_REQUEST['tid'] . " and TiWordCount = 1 and TiOrder = " . $_REQUEST['ord']);
-		$sent = getSentence($seid, $termlc, (int) getSettingWithDefault('set-term-sentence-count'));
+		$sent =getSentence($seid, $termlc, (int) getSettingWithDefault('set-term-sentence-count'));
 			
 ?>
 	
@@ -290,7 +285,7 @@ else {  // if (! isset($_REQUEST['op']))
 			$sentence = repl_tab_nl($record['WoSentence']);
 			if ($sentence == '' && isset($_REQUEST['tid']) && isset($_REQUEST['ord'])) {
 				$seid = get_first_value("select TiSeID as value from " . $tbpref . "textitems where TiTxID = " . $_REQUEST['tid'] . " and TiWordCount = 1 and TiOrder = " . $_REQUEST['ord']);
-				$sent = getSentence($seid, $termlc, (int) getSettingWithDefault('set-term-sentence-count'));
+				$sent = getSentence($seid, $term, (int) getSettingWithDefault('set-term-sentence-count'));
 				$sentence = repl_tab_nl($sent[1]);
 			}
 			$transl = repl_tab_nl($record['WoTranslation']);

@@ -70,7 +70,7 @@ if (isset($_REQUEST['restore'])) {
 // BACKUP
 
 elseif (isset($_REQUEST['backup'])) {
-	$tables = array('archivedtexts', 'archtexttags', 'languages', 'sentences', 'settings', 'tags', 'tags2', 'textitems', 'texts', 'texttags', 'words', 'wordtags');
+	$tables = array('archivedtexts', 'archtexttags', 'languages', 'sentences', 'settings', 'tags', 'tags2', 'texts', 'texttags', 'words', 'wordtags');
 	$fname = "lwt-backup-" . $pref . date('Y-m-d-H-i-s') . ".sql.gz";
 	$out = "-- " . $fname . "\n";
 	foreach($tables as $table) { // foreach table
@@ -79,7 +79,7 @@ elseif (isset($_REQUEST['backup'])) {
 		$out .= "\nDROP TABLE IF EXISTS " . $table . ";\n";
 		$row2 = mysql_fetch_row(do_mysql_query('SHOW CREATE TABLE ' . $tbpref . $table));
 		$out .= str_replace($tbpref . $table, $table, str_replace("\n"," ",$row2[1])) . ";\n";
-		if ($table !== 'sentences' && $table !== 'textitems') {
+		if ($table !== 'sentences') {
 			while ($row = mysql_fetch_row($result)) { // foreach record
 				$return = 'INSERT INTO ' . $table . ' VALUES(';
 				for ($j=0; $j < $num_fields; $j++) { // foreach field
@@ -109,7 +109,6 @@ elseif (isset($_REQUEST['empty'])) {
 	$dummy = runsql('TRUNCATE ' . $tbpref . 'sentences','');
 	$dummy = runsql('TRUNCATE ' . $tbpref . 'tags','');
 	$dummy = runsql('TRUNCATE ' . $tbpref . 'tags2','');
-	$dummy = runsql('TRUNCATE ' . $tbpref . 'textitems','');
 	$dummy = runsql('TRUNCATE ' . $tbpref . 'texts','');
 	$dummy = runsql('TRUNCATE ' . $tbpref . 'texttags','');
 	$dummy = runsql('TRUNCATE ' . $tbpref . 'words','');

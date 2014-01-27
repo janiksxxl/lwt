@@ -90,6 +90,11 @@ span.status98 {
 	border-bottom: dashed 1px #000000; 
 	color: #000000;
 }
+span.aftchar{
+	margin-left:3px;
+	border-bottom: dashed 1px #000000; 
+	color: #000000;
+}
 span.mwsty {
 	margin-right: 2px;
 	font-size: 60%;

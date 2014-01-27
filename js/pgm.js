@@ -52,49 +52,45 @@ var ol_closecolor = '#FFFFFF';
 Helper functions for overlib
 ***************************************************************/
 
-function run_overlib_status_98(dicts,glink,hints,txid,torder,txt,wid,mw2,mw3,mw4,mw5,mw6,mw7,mw8,mw9,rtl,ann)
+function run_overlib_status_98(dicts,glink,hints,txid,torder,txt,wid,mw2,mw3,mw4,mw5,mw6,mw7,mw8,mw9,rtl,ann,lang,sent)
 {
 	return overlib(
 		'<b>' + escape_html_chars_2(hints,ann) + '</b><br /> ' +
 		make_overlib_link_new_word(txid,torder,wid) + ' | ' +
 		make_overlib_link_delete_word(txid,wid) + 
-		make_overlib_link_new_multiword(txid,torder,mw2,mw3,mw4,mw5,mw6,mw7,mw8,mw9,rtl) + ' <br /> ' +
+		' <br /> ' +
 		make_overlib_link_wb(dicts,glink,txt,txid,torder), 
 		CAPTION, 'Word');
 }
 
-function run_overlib_status_99(dicts,glink,hints,txid,torder,txt,wid,mw2,mw3,mw4,mw5,mw6,mw7,mw8,mw9,rtl,ann)
+function run_overlib_status_99(dicts,glink,hints,txid,torder,txt,wid,mw2,mw3,mw4,mw5,mw6,mw7,mw8,mw9,rtl,ann,lang,sent)
 {
 	return overlib(
 		'<b>' + escape_html_chars_2(hints,ann) + '</b><br /> ' +
 		make_overlib_link_new_word(txid,torder,wid) + ' | ' +
 		make_overlib_link_delete_word(txid,wid) + 
-		make_overlib_link_new_multiword(txid,torder,mw2,mw3,mw4,mw5,mw6,mw7,mw8,mw9,rtl) + ' <br /> ' +
 		make_overlib_link_wb(dicts,glink,txt,txid,torder), 
 		CAPTION, 'Word');
 }
 
-function run_overlib_status_1_to_5(dicts,glink,hints,txid,torder,txt,wid,stat,mw2,mw3,mw4,mw5,mw6,mw7,mw8,mw9,rtl,ann)
+function run_overlib_status_1_to_5(dicts,glink,hints,txid,torder,txt,wid,stat,mw2,mw3,mw4,mw5,mw6,mw7,mw8,mw9,rtl,ann,lang,sent)
 {
 	return overlib(
 		'<b>' + escape_html_chars_2(hints,ann) + '</b><br /> ' +
 		make_overlib_link_change_status_all(txid,torder,wid,stat) + ' <br /> ' +
 		make_overlib_link_edit_word(txid,torder,wid) + ' | ' +
 		make_overlib_link_delete_word(txid,wid) + 
-		make_overlib_link_new_multiword(txid,torder,mw2,mw3,mw4,mw5,
-		mw6,mw7,mw8,mw9,rtl) + ' <br /> ' +
 		make_overlib_link_wb(dicts,glink,txt,txid,torder),
 		CAPTION, make_overlib_link_edit_word_title(
 		'Word &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;',txid,torder,wid));
 }
 
-function run_overlib_status_unknown(dicts,glink,hints,txid,torder,txt,mw2,mw3,mw4,mw5,mw6,mw7,mw8,mw9,rtl)
+function run_overlib_status_unknown(dicts,glink,hints,txid,torder,txt,mw2,mw3,mw4,mw5,mw6,mw7,mw8,mw9,rtl,lang,sent)
 {
 	return overlib(
 		'<b>' + hints+ '</b><br /> ' +
-		make_overlib_link_wellknown_word(txid,torder) + ' <br /> ' +  
-		make_overlib_link_ignore_word(txid,torder) + 
-		make_overlib_link_new_multiword(txid,torder,mw2,mw3,mw4,mw5,mw6,mw7,mw8,mw9,rtl) + ' <br /> ' +
+		make_overlib_link_wellknown_word(txt,torder,lang) + ' <br /> ' +  
+		make_overlib_link_ignore_word(txt,torder,lang) + 
 		make_overlib_link_wb(dicts,glink,txt,txid,torder),
 		CAPTION, 'New Word');
 }
@@ -150,27 +146,9 @@ function run_overlib_test(dicts,glink,wid,txt,trans,roman,stat,sent,todo,oldstat
 	CAPTION, 'Got it?');
 }
 
-function make_overlib_link_new_multiword(txid,torder,mw2,mw3,mw4,mw5,mw6,mw7,mw8,mw9,rtl) {
-	if (mw2=='' && mw3=='' && mw4=='' && mw5=='' && mw6 =='' && mw7 =='' && mw8 =='' && mw9 =='') return '';
-	if (rtl) return ' <br />Expr: ' +
-	(mw9 != '' ? make_overlib_link_create_edit_multiword_rtl(9,txid,torder,mw9) + ' ' : '') + 
-	(mw8 != '' ? make_overlib_link_create_edit_multiword_rtl(8,txid,torder,mw8) + ' ' : '') + 
-	(mw7 != '' ? make_overlib_link_create_edit_multiword_rtl(7,txid,torder,mw7) + ' ' : '') + 
-	(mw6 != '' ? make_overlib_link_create_edit_multiword_rtl(6,txid,torder,mw6) + ' ' : '') + 
-	(mw5 != '' ? make_overlib_link_create_edit_multiword_rtl(5,txid,torder,mw5) + ' ' : '') + 
-	(mw4 != '' ? make_overlib_link_create_edit_multiword_rtl(4,txid,torder,mw4) + ' ' : '') + 
-	(mw3 != '' ? make_overlib_link_create_edit_multiword_rtl(3,txid,torder,mw3) + ' ' : '') + 
-	(mw2 != '' ? make_overlib_link_create_edit_multiword_rtl(2,txid,torder,mw2) : '') + ' ';
-	else return ' <br />Expr: ' +
-	(mw2 != '' ? make_overlib_link_create_edit_multiword(2,txid,torder,mw2) + ' ' : '') + 
-	(mw3 != '' ? make_overlib_link_create_edit_multiword(3,txid,torder,mw3) + ' ' : '') + 
-	(mw4 != '' ? make_overlib_link_create_edit_multiword(4,txid,torder,mw4) + ' ' : '') + 
-	(mw5 != '' ? make_overlib_link_create_edit_multiword(5,txid,torder,mw5) + ' ' : '') + 
-	(mw6 != '' ? make_overlib_link_create_edit_multiword(6,txid,torder,mw6) + ' ' : '') + 
-	(mw7 != '' ? make_overlib_link_create_edit_multiword(7,txid,torder,mw7) + ' ' : '') + 
-	(mw8 != '' ? make_overlib_link_create_edit_multiword(8,txid,torder,mw8) + ' ' : '') + 
-	(mw9 != '' ? make_overlib_link_create_edit_multiword(9,txid,torder,mw9) : '') + ' ';
-}
+function make_overlib_link_new_multiword(txid,torder,mw2,mw3,mw4,mw5,mw6,mw7,mw8,mw9,rtl,lang,sent) {
+return '';
+	}
 
 function makeTranslateLinks(dicts,textTip,txt){
 back="";
@@ -275,16 +253,20 @@ function make_overlib_link_edit_multiword_title(text,txid,torder,wid) {
 		'&amp;wid=' + wid + '\x22 target=\x22ro\x22>' + text + '</a>';
 }
 
-function make_overlib_link_create_edit_multiword(len,txid,torder,txt) {
+function make_overlib_link_create_edit_multiword(len,txid,torder,txt,lang,sent) {
 	return ' <a href=\x22edit_mword.php?tid=' + txid + 
 		'&amp;ord=' + torder + 
+		'&amp;lang=' + lang + 
+		'&amp;seid=' + sent + 
 		'&amp;txt=' + txt +
 		'\x22 target=\x22ro\x22>' + len + '..' + escape_html_chars(txt.substr(-2).trim()) + '</a> ';
 }
 
-function make_overlib_link_create_edit_multiword_rtl(len,txid,torder,txt) {
+function make_overlib_link_create_edit_multiword_rtl(len,txid,torder,txt,lang,sent) {
 	return ' <a dir=\x22rtl\x22 href=\x22edit_mword.php?tid=' + txid + 
 		'&amp;ord=' + torder + 
+		'&amp;lang=' + lang + 
+		'&amp;seid=' + sent + 
 		'&amp;txt=' + txt +
 		'\x22 target=\x22ro\x22>' + len + '..' + escape_html_chars(txt.substr(-2).trim()) + '</a> ';
 }
@@ -311,14 +293,14 @@ function make_overlib_link_delete_multiword(txid,wid) {
 		wid + '&amp;tid=' + txid + '\x22 target=\x22ro\x22>Delete term</a> ';
 }
 
-function make_overlib_link_wellknown_word(txid,torder) {
-	return ' <a href=\x22insert_word_wellknown.php?tid=' + 
-		txid + '&amp;ord=' + torder + '\x22 target=\x22ro\x22>I know this term well</a> ';
+function make_overlib_link_wellknown_word(txt,torder,lang) {
+	return ' <a href=\x22insert_word_wellknown.php?term=' + 
+		txt + '&amp;ord=' + torder + '&amp;lang=' + lang + '\x22 target=\x22ro\x22>I know this term well</a> ';
 }
 
-function make_overlib_link_ignore_word(txid,torder) {
-	return ' <a href=\x22insert_word_ignore.php?tid=' + txid + 
-		'&amp;ord=' + torder + '\x22 target=\x22ro\x22>Ignore this term</a> ';
+function make_overlib_link_ignore_word(txt,torder,lang) {
+	return ' <a href=\x22insert_word_ignore.php?term=' + txt + 
+		'&amp;ord=' + torder + '&amp;lang=' + lang + '\x22 target=\x22ro\x22>Ignore this term</a> ';
 }
 
 /**************************************************************

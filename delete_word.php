@@ -40,8 +40,9 @@ require_once( 'connect.inc.php' );
 require_once( 'dbutils.inc.php' );
 require_once( 'utilities.inc.php' );
 
-$tid = $_REQUEST['tid'];
-$wid = $_REQUEST['wid'];
+$tid = get_link_parameter("tid",pathinfo(__FILE__, PATHINFO_BASENAME));
+$wid = get_link_parameter("wid",pathinfo(__FILE__, PATHINFO_BASENAME));
+
 $term = get_first_value("select WoText as value from " . $tbpref . "words where WoID = " . $wid);
 pagestart("Term: " . $term, false);
 $m1 = runsql('delete from ' . $tbpref . 'words where WoID = ' . $wid, '');

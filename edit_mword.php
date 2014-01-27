@@ -45,6 +45,7 @@ require_once( 'dbutils.inc.php' );
 require_once( 'utilities.inc.php' );
 
 $translation_raw = repl_tab_nl(getreq("WoTranslation"));
+$lang=0;$seid=0;$term="";
 if ( $translation_raw == '' ) $translation = '*';
 else $translation = $translation_raw;
 
@@ -54,7 +55,7 @@ if (isset($_REQUEST['op'])) {
 	
 	$textlc = trim(prepare_textdata($_REQUEST["WoTextLC"]));
 	$text = trim(prepare_textdata($_REQUEST["WoText"]));
-	
+	$split=$_REQUEST["LgSp"];
 	if (mb_strtolower($text, 'UTF-8') == $textlc) {
 	
 		// INSERT
@@ -120,7 +121,21 @@ make_score_random_insert_update('id') . ')', "Term saved");
 		exit();
 
 	}
-
+$vals=array();
+if($split=="1")
+	{
+	$vals=getCharArray3($text);
+	}
+	else{
+	$vals=preg_split("/([ '-])/m",$text,-1,PREG_SPLIT_DELIM_CAPTURE | PREG_SPLIT_NO_EMPTY);
+	}
+	var_dump($vals);
+	$jsAdd="[";
+	foreach($vals as $val){
+	if($val=="") continue;
+	$jsAdd.='"'.$val.'",';
+	}
+	$jsAdd.="]";
 	?>
 	
 	<p>OK: <?php echo tohtml($message); ?></p>
@@ -139,10 +154,13 @@ var title = make_tooltip(<?php echo prepare_textdata_js($_REQUEST["WoText"]); ?>
 		// new
 		$showAll = getSettingZeroOrOne('showallwords', 1);
 ?>
-$('.TERM<?php echo $hex; ?>', context).removeClass('hide').addClass('word' + woid + ' ' + 'status' + status).attr('data_trans',trans).attr('data_rom',roman).attr('data_status',status).attr('data_wid',woid).attr('title',title);
-$('#learnstatus', contexth).html('<?php echo texttodocount2($_REQUEST['tid']); ?>');
+var parts="<?php echo $text; ?>"
+
+clearGroupA(context,<?php echo $jsAdd; ?>,buildMultiTerm(<?php echo $jsAdd; ?>.length,woid,"<?php echo $text; ?>","<?php echo $text; ?>",31,trans,status,roman));
+//$('.TERM<?php echo $hex; ?>', context).removeClass('hide').addClass('word' + woid + ' ' + 'status' + status).attr('data_trans',trans).attr('data_rom',roman).attr('data_status',status).attr('data_wid',woid).attr('title',title);
+//$('#learnstatus', contexth).html('<?php echo texttodocount2($_REQUEST['tid']); ?>');
 <?php 
-		if (! $showAll) echo refreshText($text,$_REQUEST['tid']);
+		//if (! $showAll) echo refreshText($text,$_REQUEST['tid']);
 ?>
 <?php 
 	} else {
@@ -167,10 +185,15 @@ else {  // if (! isset($_REQUEST['op']))
 	
 	$wid = getreq('wid');
 	
-	if ($wid == '') {	
-		$lang = get_first_value("select TxLgID as value from " . $tbpref . "texts where TxID = " . $_REQUEST['tid']);
-		$term = prepare_textdata(getreq('txt'));
-		$termlc =	mb_strtolower($term, 'UTF-8');
+	if ($wid == '') {
+	if (isset($_GET['lang']) && isset($_GET['txt']) && isset($_GET['seid'])) {
+			$term = prepare_textdata(getreq('txt'));
+			$lang = $_GET['lang'];
+			$seid = $_GET['seid'];
+		} else {
+			my_die("Cannot access Term and Language in edit_mword.php");
+		}
+	$termlc =	mb_strtolower($term, 'UTF-8');
 		
 		$wid = get_first_value("select WoID as value from " . $tbpref . "words where WoLgID = " . $lang . " and WoTextLC = " . convert_string_to_sqlsyntax($termlc)); 
 		if (isset($wid)) $term = get_first_value("select WoText as value from " . $tbpref . "words where WoID = " . $wid); 
@@ -198,22 +221,21 @@ else {  // if (! isset($_REQUEST['op']))
 ?>
 <script type="text/javascript" src="js/unloadformcheck.js" charset="utf-8"></script>
 <?php
+
+$split=$_GET['split'];
 	$scrdir = getScriptDirectionTag($lang);
 	
 	// NEW
 	
 	if ($new) {
-		
-		$seid = get_first_value("select TiSeID as value from " . $tbpref . "textitems where TiTxID = " . $_REQUEST['tid'] . " and TiOrder = " . $_REQUEST['ord']);
 		$sent = getSentence($seid, $termlc, (int) getSettingWithDefault('set-term-sentence-count'));
 			
 		?>
 	
 		<form name="newword" class="validate" action="<?php echo $_SERVER['PHP_SELF']; ?>" method="post">
 		<input type="hidden" name="WoLgID" value="<?php echo $lang; ?>" />
+		<input type="hidden" name="LgSp" value="<?php echo $split; ?>" />
 		<input type="hidden" name="WoTextLC" value="<?php echo tohtml($termlc); ?>" />
-		<input type="hidden" name="tid" value="<?php echo $_REQUEST['tid']; ?>" />
-		<input type="hidden" name="ord" value="<?php echo $_REQUEST['ord']; ?>" />
 		<table class="tab2" cellspacing="0" cellpadding="5">
 		<tr title="Only change uppercase/lowercase!">
 		<td class="td1 right"><b>New Term:</b></td>

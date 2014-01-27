@@ -554,15 +554,15 @@ Marked Texts:&nbsp;
 
 <?php
 
-$sql = 'select TxID, TxTitle, LgName, TxAudioURI, TxSourceURI, length(TxAnnotatedText) as annotlen, ifnull(concat(\'[\',group_concat(distinct T2Text order by T2Text separator \', \'),\']\'),\'\') as taglist from ((' . $tbpref . 'texts left JOIN ' . $tbpref . 'texttags ON TxID = TtTxID) left join ' . $tbpref . 'tags2 on T2ID = TtT2ID), ' . $tbpref . 'languages where LgID=TxLgID ' . $wh_lang . $wh_query . ' group by TxID ' . $wh_tag . ' order by ' . $sorts[$currentsort-1] . ' ' . $limit;
+$sql = 'select words, words_saved, TxID, TxTitle, LgName, TxAudioURI, TxSourceURI, length(TxAnnotatedText) as annotlen, ifnull(concat(\'[\',group_concat(distinct T2Text order by T2Text separator \', \'),\']\'),\'\') as taglist from ((' . $tbpref . 'texts left JOIN ' . $tbpref . 'texttags ON TxID = TtTxID) left join ' . $tbpref . 'tags2 on T2ID = TtT2ID), ' . $tbpref . 'languages where LgID=TxLgID ' . $wh_lang . $wh_query . ' group by TxID ' . $wh_tag . ' order by ' . $sorts[$currentsort-1] . ' ' . $limit;
 if ($debug) echo $sql;
 $res = do_mysql_query($sql);
 $showCounts = getSettingWithDefault('set-show-text-word-counts')+0;
 while ($record = mysql_fetch_assoc($res)) {
 	if ($showCounts) {
 		flush();
-		$txttotalwords = textwordcount($record['TxID']);
-		$txtworkedwords = textworkcount($record['TxID']);
+		$txttotalwords = $record['words'];
+		$txtworkedwords = $record['words_known'];
 		$txtworkedexpr = textexprcount($record['TxID']);
 		$txtworkedall = $txtworkedwords + $txtworkedexpr;
 		$txttodowords = $txttotalwords - $txtworkedwords;

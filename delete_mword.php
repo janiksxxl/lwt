@@ -48,6 +48,18 @@ $word = get_first_value("select WoText as value from " . $tbpref . "words where 
 pagestart("Term: " . $word, false);
 $m1 = runsql('delete from ' . $tbpref . 'words where WoID = ' . $wid, '');
 adjust_autoincr('words','WoID');
+//$vals=preg_split("/[' -]/",$text,PREG_SPLIT_NO_EMPTY|PREG_SPLIT_DELIM_CAPTURE);
+	//$vals=preg_split('/(?!^)(?=.)/u',$text,PREG_SPLIT_NO_EMPTY|PREG_SPLIT_DELIM_CAPTURE);
+	$vals=getCharArray3($text); $possValues=array();
+	$l=count($vals);
+	$frase="";
+	foreach($vals as $val){
+	if($val=="") continue;
+	echo "a".$val."a";
+	$jsAdd.='"'.$val.'",';
+	}
+
+
 
 echo "<p>OK, term deleted (" . $m1 . ").</p>";
 
@@ -56,10 +68,10 @@ echo "<p>OK, term deleted (" . $m1 . ").</p>";
 //<![CDATA[
 var context = window.parent.frames['l'].document;
 var contexth = window.parent.frames['h'].document;
-$('.word<?php echo $wid; ?>', context).removeClass('status1 status2 status3 status4 status5 status98 status99 word<?php echo $wid; ?>').addClass('hide').attr('data_status','').attr('data_trans','').attr('data_rom','').attr('data_wid','').attr('title','');
+$('.word<?php echo $wid; ?>', context).remove();
 $('#learnstatus', contexth).html('<?php echo texttodocount2($tid); ?>');
 <?php 
-if (! $showAll) echo refreshText($word,$tid);
+//if (! $showAll) echo refreshText($word,$tid);
 ?>
 window.parent.frames['l'].focus();
 window.parent.frames['l'].setTimeout('cClick()', 100);

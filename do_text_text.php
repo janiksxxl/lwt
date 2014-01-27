@@ -1,5 +1,7 @@
 <?php
-
+ini_set('display_errors',1);
+ini_set('display_startup_errors',1);
+error_reporting(-1);
 /**************************************************************
 "Learning with Texts" (LWT) is free and unencumbered software 
 released into the PUBLIC DOMAIN.
@@ -34,43 +36,58 @@ For more information, please refer to [http://unlicense.org/].
 Call: do_text_text.php?text=[textid]
 Show text header frame
 ***************************************************************/
-
+$before = microtime(true);
 require_once( 'settings.inc.php' );
 require_once( 'connect.inc.php' );
 require_once( 'dbutils.inc.php' );
 require_once( 'utilities.inc.php' );
 
-$sql = 'select TxLgID, TxTitle, TxAnnotatedText from ' . $tbpref . 'texts where TxID = ' . $_REQUEST['text'];
+$sql = 'select TxID,TxLgID, TxTitle, TxAnnotatedText,TxText from ' . $tbpref . 'texts where TxID = ' . $_REQUEST['text'];
 $res = do_mysql_query($sql);
 $record = mysql_fetch_assoc($res);
+$TxtId=$record['TxID'];
 $title = $record['TxTitle'];
 $langid = $record['TxLgID'];
+$textFull="";
+$textIntact=$record['TxText'];
 $ann = $record['TxAnnotatedText'];
 $ann_exists = (strlen($ann) > 0);
 mysql_free_result($res);
 
 pagestart_nobody(tohtml($title));
 
-$sql = 'select LgName, LgGoogleTranslateURI, LgTextSize, LgRemoveSpaces, LgRightToLeft, LgID  from ' . $tbpref . 'languages where LgID = ' . $langid;
+$sql = 'select LgSplitEachChar, LgRegexpWordCharacters, LgName, LgGoogleTranslateURI, LgTextSize, LgRemoveSpaces, LgRightToLeft, LgID  from ' . $tbpref . 'languages where LgID = ' . $langid;
 $res = do_mysql_query($sql);
 $record = mysql_fetch_assoc($res);
-
-$LangId=$record['LgID'];
-$sql = 'select name,URI from ' . $tbpref . 'ditionaries where languagesLgID = ' . $LangId;
-$dics = do_mysql_query($sql);
-$dictionaries=array();
-$jsString="DICTS=[";
-while($dic=mysql_fetch_assoc($dics)){
-array_push($dictionaries,[$dic['name'],$dic['URI']]);
-$jsString=$jsString.'["'."$dic[name]".'","'."$dic[URI]".'"],';
-}
-$jsString=$jsString."];";
-
 $wb3 = isset($record['LgGoogleTranslateURI']) ? $record['LgGoogleTranslateURI'] : "";
-
+$termchar=$record['LgRegexpWordCharacters'];
 $textsize = $record['LgTextSize'];
+$SplitAll=($record['LgSplitEachChar']==0)?false:true;
+$NoSpaces=($record['LgRemoveSpaces']==0)?false:true;
 $removeSpaces = $record['LgRemoveSpaces'];
 $rtlScript = $record['LgRightToLeft'];
+mysql_free_result($res);
+
+$sql = 'select name,URI from ' . $tbpref . 'dictionaries where languagesLgID = ' . $langid;
+$res = do_mysql_query($sql);
+$dictionaries=array();
+$jsDictsString="DICTS=[";
+while($record=mysql_fetch_assoc($res)){
+array_push($dictionaries,[$record['name'],$record['URI']]);
+$jsDictsString=$jsDictsString.'["'."$record[name]".'","'."$record[URI]".'"],';
+}
+$jsDictsString=$jsDictsString."];";
+mysql_free_result($res);
+
+$sql = 'SELECT WoID, WoText, WoStatus, WoTranslation, WoRomanization from ' . $tbpref . 'words WHERE WoLgID = ' . $langid;
+$res = do_mysql_query($sql);
+$wordList=array();
+$jsWordList="var dictionary = {";
+while($record=mysql_fetch_assoc($res)){
+$wordList[mb_strtolower($record['WoText'], 'UTF-8')]=["id"=>$record['WoID'],"text"=>$record['WoText'],"tlower"=>mb_strtolower($record['WoText'], 'UTF-8'),"status"=>$record['WoStatus'],"translation"=>$record['WoTranslation'],"romanization"=>$record['WoRomanization']];
+$jsWordList.='"'.$record['WoText'].'": [ "'.$record['WoID'].'", "'.$record['WoText'].'", "'.mb_strtolower($record['WoText'], 'UTF-8').'"],';
+}
+$jsWordList.="};";
 mysql_free_result($res);
 
 $showAll = getSettingZeroOrOne('showallwords',1);
@@ -81,7 +98,10 @@ $showAll = getSettingZeroOrOne('showallwords',1);
 ANN_ARRAY = <?php echo annotation_to_json($ann); ?>;
 TEXTPOS = -1;
 OPENED = 0;
-<?php echo $jsString; ?>
+<?php echo $jsWordList ?>
+;;;
+<?php echo $jsDictsString; ?>
+
 WBLINK3 = '<?php echo $wb3; ?>';
 
 RTL = <?php echo $rtlScript; ?>;
@@ -94,115 +114,198 @@ $(document).ready( function() {
 	$('.mword').click(mword_click_event_do_text_text);
 	$('.word').dblclick(word_dblclick_event_do_text_text);
 	$('.mword').dblclick(word_dblclick_event_do_text_text);
-	//$('.thetext').onmousedown(text_onmousedown_event_do_text_text);
 	$(document).keydown(keydown_event_do_text_text);
 });
 //]]>
 </script>
 <?php
 
-echo '<div id="thetext" ' .  ($rtlScript ? 'dir="rtl"' : '') . ' ><p style="' . ($removeSpaces ? 'word-break:break-all;' : '') . 
+echo '<div id="thetext" ' .  ($rtlScript ? 'dir="rtl"' : '') . ' ><p id="container" style="' . ($removeSpaces ? 'word-break:break-all;' : '') . 
 'font-size:' . $textsize . '%;line-height: 1.4; margin-bottom: 10px;">';
 
-$currcharcount = 0;
+$currcharcount = 0;	
 
-$sql = 'select TiTxID,TiWordCount as Code, TiText, TiOrder, TiIsNotWord, CHAR_LENGTH(TiText) AS TiTextLength, WoID, WoText, WoTextLC, WoStatus, WoTranslation, WoRomanization from (' . $tbpref . 'textitems left join ' . $tbpref . 'words on (TiTextLC = WoTextLC) and (TiLgID = WoLgID)) where TiTxID = ' . $_REQUEST['text'] . ' order by TiOrder asc, TiWordCount desc';
+$sql = 'SELECT SeSplit, SeText, SeID from ' . $tbpref . 'sentences WHERE SeLgID = ' . $langid. ' AND SeTxId='.$TxtId.' ORDER BY SeID';
+$sentences = do_mysql_query($sql);
+		$sentNumber=0;
+		$ordId=1;
+		$sentencesD=array();
+		$sentencesS=array();
+while($sentence=mysql_fetch_assoc($sentences)){
+$tempWordsets=array();
+$sentenceSplit=$sentence['SeSplit'];
 
-$titext = array('','','','','','','','','','','');
-$hideuntil = -1;
-$hidetag = '';
+$tempWords=explode(';',$sentenceSplit);
+//var_dump($tempWords);
+$tempWords2=array();
+$tempBuild="";
+foreach($tempWords as $word){
+if(preg_split('/([^' . $termchar . ']{1,})/u', $word)[0]==""){
+$tempBuild.=$word;
+}else{
+if($tempBuild!=""){
+$tempWords2[]="*".$tempBuild;
+$tempBuild="";
+}
+$tempWords2[]=$word;
+}
+}
+if($tempBuild!=""){$tempWords2[]="*".$tempBuild;}
+$tempWords=$tempWords2;
+//var_dump($tempWords);
+$l = count($tempWords);	
+$ignoreUp=false;
+			for ($i=0; $i<$l; $i++) {
+			if($tempWords[$i][0]=="*"){
+			//var_dump(substr($tempWords[$i],1));
+			$tempWordsets[$ordId]=[substr($tempWords[$i],1),1,$ordId,$sentence['SeID'],1,substr($tempWords[$i],1),$count2]; $ordId++;
+			continue;}
+			if($tempWords[$i][0]==","){
+			$tempWordsets[$ordId]=[substr($tempWords[$i],1)." ",1,$ordId,$sentence['SeID'],1,substr($tempWords[$i],1)." ",1];$ordId++;
+			continue;}
+			$frase="";
+			for ($j=1; 0<=$l-$i-$j; $j++) {
+			if($tempWords[$i+$j][0]=="*" ){continue;}
+			$frase="";
+			$past="";
+			$count1=0;
+			$count2=0;
+			$length=0;
+				for ($k=0; 0<=$l-$i-$j-$k; $k++) {
+				$length++;
+				if($tempWords[$i+$k][0]=="*"){$count2++;$past=substr($tempWords[$i+$k],1);continue;}
+					$count1++;
+					if($past!=""){$frase.=$past;$past="";}
+					$frase.=$tempWords[$i+$k];
+				}
+				//var_dump($frase);
+				//$frase=trim($frase);
+				//$tempWordsets[$frase]=[$frase,$count1,$ordId,$sentence['SeID'],0,$tempWords[$i],$count2];
+				if(array_key_exists(mb_strtolower($frase, 'UTF-8'),$wordList)){
+				$tempWordsets[$ordId]=[$frase,$count1,$ordId,$sentence['SeID'],0,$tempWords[$i],$count2];
+				$i+=$length-1;
+				
+				//var_dump($frase."exist");
+				for($Win=0;$Win<$length-1;$Win++){
+				$ordId++;
+				if($SplitAll){
+				$ghet=0;
+				}else{
+				$ghet=2;
+				}
+				//var_dump($ghet);
+				$valuey=$tempWords[($i)+$Win-$ghet];
+				if($valuey[0]=="*"){//var_dump((($i)+$Win).substr($tempWords[($i)+$Win],1));
+				$valuexx=substr($tempWords[($i)+$Win-$ghet],1);
+				$tempWordsets[$ordId]=[$valuexx,1,$ordId,$sentence['SeID'],1,$valuexx,1];
+				}else{//var_dump((($i)+$Win).$tempWords[($i)+$Win]);
+				$valuexy=$tempWords[($i)+$Win];
+				if($valuexy[0]=="*"){
+				$tempWordsets[$ordId]=[substr($valuexy,1),1,$ordId,$sentence['SeID'],1,substr($valuexy,1),1];
+				}else{
+				$tempWordsets[$ordId]=[$valuexy,1,$ordId,$sentence['SeID'],0,$valuexy,1];
+				}
+				
+				}
+				}
+				}else{
+				if($length==1){
+				//var_dump($frase);
+				if($frase[0]=="*"){
+				//$tempWordsets[$ordId]=[substr($frase,1),$count1,$ordId,$sentence['SeID'],0,substr($tempWords[$i],1),$count2];
+				}
+				else{$tempWordsets[$ordId]=[$frase,$count1,$ordId,$sentence['SeID'],0,$tempWords[$i],$count2];}}
+				}
+			}
+			$ordId++;
+			}
+		$sentencesD[trim($sentence['SeText'])]=$tempWordsets;
+		//var_dump($tempWordsets);
+		$sentencesS[]=trim($sentence['SeText']);
+			$sentNumber += 1;
+			}
+			
+$countx=count($sentencesS);
+for($ii=0;$ii<$countx;$ii++){
+$value=$sentencesS[$ii];
+$wordstouse=$sentencesD[$value];
+$resultHtml="";
+$lastOrder=0;
+$ignoreId=0;
+$furtherIgnore=0;
+foreach($wordstouse as $a=>$w1){
+$record=[
+			'TiText' =>$w1[0],
+			'TiTextBase' =>$w1[5],
+			'TiSentId' =>$w1[3],
+			'Code' =>$w1[1],
+			'TiOrder' =>$w1[2],
+			'TiIsNotWord' =>$w1[4],
+			'TiTextLength' =>strlen($w1[0])
+		];
+if($lastOrder==0){
+$resultHtml.='<span id="WORD-'.$record['TiOrder'].'" data_word_id="'.$record['TiOrder'].'" data_sentence_id="'.$record['TiSentId'].'" data_language_id="'.$langid.'" data_word="'.$record['TiTextBase'].'">';
+$lastOrder=$record['TiOrder'];
+}elseif($lastOrder!=$record['TiOrder']){
+$resultHtml.='</span>';
+$resultHtml.='<span id="WORD-'.$record['TiOrder'].'" data_word_id="'.$record['TiOrder'].'" data_sentence_id="'.$record['TiSentId'].'" data_language_id="'.$langid.'" data_word="'.$record['TiTextBase'].'">';
+$lastOrder=$record['TiOrder'];
+}
+$thisWord=$wordList[mb_strtolower($record['TiText'], 'UTF-8')];
 
-$res = do_mysql_query($sql);
-
-while ($record = mysql_fetch_assoc($res)) { 
-//var_dump($record); // MAIN LOOP
-$TxtId=$record['TiTxID'];
+if((($thisWord==null && $record['Code']==1) || $thisWord!=null) && ($ignoreId!=$record['TiOrder'])){$ignoreId=$record['TiOrder'];}else{continue;}
 $recordCode=$record['Code'];
 $recordTiOrder=$record['TiOrder'];
 	$actcode = $recordCode + 0;
 	$spanid = 'ID-' . $recordTiOrder . '-' . $actcode;
-
-	if ( $hideuntil > 0  ) {
-		if ( $recordTiOrder <= $hideuntil )
-		{	$hidetag = ' hide';}			
-		else {
-			$hideuntil = -1;
-			$hidetag = '';
-		}
-	}				
-	
+				
 	if ($record['TiIsNotWord'] != 0) {  // NOT A TERM
-	
-		echo '<span id="' . $spanid . '" class="' . 
-			$hidetag . '" onmousedown="text_onmousedown_event_do_text_text(this,$TxtId)">' . 
+	if($furtherIgnore!=0) {continue;}
+		$resultHtml.= '<span id="' . $spanid . '" class="" >' . 
 			str_replace(
 			"¶",
 			'<br />',
 			tohtml($record['TiText'])) . '</span>';
-			
 	}  // $record['TiIsNotWord'] != 0  --  NOT A TERM
-	
-	/////////////////////////////////////////////////
-	
 	else {   // $record['TiIsNotWord'] == 0  -- A TERM
-	
+	if($furtherIgnore!=0) {$furtherIgnore--;continue;}
 		if ($actcode > 1) {   // A MULTIWORD FOUND
-		
-			$titext[$actcode] = $record['TiText'];
-			
-			if (isset($record['WoID'])) {  // MULTIWORD FOUND - DISPLAY (Status 1-5, display)
-			
+			if ($thisWord!=null) {  // MULTIWORD FOUND - DISPLAY (Status 1-5, display)
 				if (! $showAll) {
 					if ($hideuntil == -1) {
 						$hideuntil = $recordTiOrder + ($recordCode - 1) * 2;
 					}
-				}
-								
-?><span id="<?php echo $spanid; ?>" class="<?php echo $hidetag; ?> click mword <?php echo ($showAll ? 'mwsty' : 'wsty'); ?> <?php echo 'order'. $recordTiOrder; ?> <?php echo 'word'. $record['WoID']; ?> <?php echo 'status'. $record['WoStatus']; ?> TERM<?php echo strToClassName(strtolower($record['TiText'])); ?>" data_pos="<?php echo $currcharcount; ?>" data_order="<?php echo $recordTiOrder; ?>" data_wid="<?php echo $record['WoID']; ?>" data_trans="<?php echo tohtml(repl_tab_nl2($record['WoTranslation']) . getWordTagList($record['WoID'],' ',1,0)); ?>" data_rom="<?php echo tohtml($record['WoRomanization']); ?>" data_status="<?php echo $record['WoStatus']; ?>"  data_code="<?php echo $recordCode; ?>" data_text="<?php echo tohtml($record['TiText']); ?>" onmousedown="text_onmousedown_event_do_text_text(this,<?php echo $TxtId; ?>)"6><?php echo ($showAll ? ('&nbsp;' . $recordCode . '&nbsp;') : tohtml($record['TiText'])); ?></span><?php	
-
+				}				
+				$resultHtml.='<span id="'.$spanid.'" class="click mword '.($showAll ? 'mwsty' : 'wsty').' order'.$recordTiOrder.' word'.$thisWord['id'].' status'.$thisWord['status'].' TERM'.strToClassName(mb_strtolower($record['TiText'], 'UTF-8')).'" data_pos="'.$currcharcount.'" data_order="'.$recordTiOrder.'" data_wid="'.$thisWord['id'].'" data_trans="'.tohtml(repl_tab_nl2($thisWord['translation']) . getWordTagList($thisWord['id'],' ',1,0)).'" data_rom="'.tohtml($thisWord['romanization']).'" data_status="'.$thisWord['status'].'"  data_code="'.$recordCode.'" onmousedown="text_onmousedown_event_do_text_text(this,'.$TxtId.')">'.($showAll ? ('&nbsp;' . $recordCode . '&nbsp;') : tohtml($record['TiText'])).'</span>';
+			$furtherIgnore=$record['Code']-1;
 			}
-			
-			////////////////////////////////////////////////
-			
 			else {  // MULTIWORD PLACEHOLDER - NO DISPLAY 
-			
-?><span id="<?php echo $spanid; ?>" class="click mword <?php echo ($showAll ? 'mwsty' : 'wsty'); ?> hide <?php echo 'order'. $recordTiOrder; ?> TERM<?php echo strToClassName(strtolower($record['TiText'])); ?>" data_pos="<?php echo $currcharcount; ?>" data_order="<?php echo $recordTiOrder; ?>" data_wid="" data_trans="" data_rom="" data_status="" data_code="<?php echo $recordCode; ?>" data_text="<?php echo tohtml($record['TiText']); ?>"><?php echo ($showAll ? ('&nbsp;' . $recordCode. '&nbsp;') : tohtml($record['TiText'])); ?></span><?php	
-
+				$resultHtml.='<span id="'.$spanid.'" class="click mword '.($showAll ? 'mwsty' : 'wsty').'   '.'order'. $recordTiOrder.'  TERM'.strToClassName(mb_strtolower($record['TiText'], 'UTF-8')).'" data_pos="'.$currcharcount.'" data_order="'.$recordTiOrder.'" data_wid="" data_trans="" data_rom="" data_status="" data_code="'.$recordCode.'" onmousedown="text_onmousedown_event_do_text_text(this,'.$TxtId.')">'.($showAll ? ('&nbsp;' . $recordCode. '&nbsp;') : tohtml($record['TiText'])).'</span>';	
 			}   // MULTIWORD PLACEHOLDER - NO DISPLAY 
-			
 		} // ($actcode > 1) -- A MULTIWORD FOUND
-
-		////////////////////////////////////////////////
-		
 		else {  // ($actcode == 1)  -- A WORD FOUND
-		
-			if (isset($record['WoID'])) {  // WORD FOUND STATUS 1-5,98,99
-
-?><span id="<?php echo $spanid; ?>" class="<?php echo $hidetag; ?> click word wsty <?php echo 'word'. $record['WoID']; ?> <?php echo 'status'. $record['WoStatus']; ?> TERM<?php echo strToClassName(strtolower($record['TiText'])); ?>" data_pos="<?php echo $currcharcount; ?>" data_order="<?php echo $recordTiOrder; ?>" data_wid="<?php echo $record['WoID']; ?>" data_trans="<?php echo str_replace("|","</br>",$record['WoTranslation']) . getWordTagList($record['WoID'],' ',1,0); ?>" data_rom="<?php echo tohtml($record['WoRomanization']); ?>" data_status="<?php echo $record['WoStatus']; ?>" data_mw2="<?php echo tohtml($titext[2]); ?>" data_mw3="<?php echo tohtml($titext[3]); ?>" data_mw4="<?php echo tohtml($titext[4]); ?>" data_mw5="<?php echo tohtml($titext[5]); ?>" data_mw6="<?php echo tohtml($titext[6]); ?>" data_mw7="<?php echo tohtml($titext[7]); ?>" data_mw8="<?php echo tohtml($titext[8]); ?>" data_mw9="<?php echo tohtml($titext[9]); ?>" onmousedown="text_onmousedown_event_do_text_text(this,<?php echo $TxtId; ?>)"><?php echo tohtml($record['TiText']); ?></span><?php	
-
+			if ($thisWord!=null) {  // WORD FOUND STATUS 1-5,98,99
+				$resultHtml.='<span id="'.$spanid.'" class="click word wsty   word'. $thisWord['id'].'   status'. $thisWord['status'].'  TERM'.strToClassName(mb_strtolower($record['TiText'], 'UTF-8')).'" data_pos="'.$currcharcount.'" data_order="'.$recordTiOrder.'" data_wid="'.$thisWord['id'].'" data_trans="'.tohtml($thisWord['translation']). getWordTagList($thisWord['id'],' ',1,0).'" data_rom="'.tohtml($thisWord['romanization']).'" data_status="'.$thisWord['status'].'" onmousedown="text_onmousedown_event_do_text_text(this,'.$TxtId.')">'.tohtml($record['TiText']).'</span>';	
 			}   // WORD FOUND STATUS 1-5,98,99
-			
-			////////////////////////////////////////////////
-			
 			else {    // NOT A WORD AND NOT A MULTIWORD FOUND - STATUS 0
-			
-?><span id="<?php echo $spanid; ?>" class="<?php echo $hidetag; ?> click word wsty status0 TERM<?php echo strToClassName(strtolower($record['TiText'])); ?>" data_pos="<?php echo $currcharcount; ?>" data_order="<?php echo $recordTiOrder; ?>" data_trans="" data_rom="" data_status="0" data_wid="" data_mw2="<?php echo tohtml($titext[2]); ?>" data_mw3="<?php echo tohtml($titext[3]); ?>" data_mw4="<?php echo tohtml($titext[4]); ?>" data_mw5="<?php echo tohtml($titext[5]); ?>" data_mw6="<?php echo tohtml($titext[6]); ?>" data_mw7="<?php echo tohtml($titext[7]); ?>" data_mw8="<?php echo tohtml($titext[8]); ?>" data_mw9="<?php echo tohtml($titext[9]); ?>" onmousedown="text_onmousedown_event_do_text_text(this,<?php echo $TxtId; ?>)"><?php echo tohtml($record['TiText']); ?></span><?php	
-
+				$resultHtml.='<span id="'.$spanid.'" class="click word wsty status0 TERM'.strToClassName(mb_strtolower($record['TiText'], 'UTF-8')).'" data_pos="'.$currcharcount.'" data_order="'.$recordTiOrder.'" data_trans="" data_rom="" data_status="0" data_wid="" onmousedown="text_onmousedown_event_do_text_text(this,'.$TxtId.')">'.tohtml($record['TiText']).'</span>';	
 			}  // NOT A WORD AND NOT A MULTIWORD FOUND - STATUS 0
-			
-			$titext = array('','','','','','','','','','','');
-			
 		}  // ($actcode == 1)  -- A WORD FOUND
-		
 	} // $record['TiIsNotWord'] == 0  -- A TERM
 	
 	if ($actcode == 1) $currcharcount += $record['TiTextLength']; 
-	
-} // while ($record = mysql_fetch_assoc($res))  -- MAIN LOOP
+}
+$resultHtml.='</span>';
+if($SplitAll){
+$textFull.=$resultHtml;
+}else{
+$textFull.=$resultHtml;
+}
+}
+echo '<div id="text-container" data_language_split="' . $SplitAll . '" style="font-size:' . $textsize . '%;line-height: 1.4;">'.$textFull.'</div>';
 
 mysql_free_result($res);
-echo '<span id="totalcharcount" class="hide">' . $currcharcount . '</span></p><p style="font-size:' . $textsize . '%;line-height: 1.4; margin-bottom: 300px;">&nbsp;</p></div>';
+echo '<span id="totalcharcount" class="hide">' . $currcharcount . '</span></p><p style="font-size:' . $textsize . '%;line-height: 1.4; margin-bottom: 300px;">&nbsp;</p></div></br>';
 
 pageend();
-
 ?>
