@@ -56,7 +56,7 @@ function run_overlib_status_98(dicts,glink,hints,txid,torder,txt,wid,mw2,mw3,mw4
 {
 	return overlib(
 		'<b>' + escape_html_chars_2(hints,ann) + '</b><br /> ' +
-		make_overlib_link_new_word(txid,torder,wid) + ' | ' +
+		make_overlib_link_new_word(txid,torder,wid,sent) + ' | ' +
 		make_overlib_link_delete_word(txid,wid) + 
 		' <br /> ' +
 		make_overlib_link_wb(dicts,glink,txt,txid,torder), 
@@ -67,7 +67,7 @@ function run_overlib_status_99(dicts,glink,hints,txid,torder,txt,wid,mw2,mw3,mw4
 {
 	return overlib(
 		'<b>' + escape_html_chars_2(hints,ann) + '</b><br /> ' +
-		make_overlib_link_new_word(txid,torder,wid) + ' | ' +
+		make_overlib_link_new_word(txid,torder,wid,sent) + ' | ' +
 		make_overlib_link_delete_word(txid,wid) + 
 		make_overlib_link_wb(dicts,glink,txt,txid,torder), 
 		CAPTION, 'Word');
@@ -78,7 +78,7 @@ function run_overlib_status_1_to_5(dicts,glink,hints,txid,torder,txt,wid,stat,mw
 	return overlib(
 		'<b>' + escape_html_chars_2(hints,ann) + '</b><br /> ' +
 		make_overlib_link_change_status_all(txid,torder,wid,stat) + ' <br /> ' +
-		make_overlib_link_edit_word(txid,torder,wid) + ' | ' +
+		make_overlib_link_edit_word(txid,torder,wid,sent) + ' | ' +
 		make_overlib_link_delete_word(txid,wid) + 
 		make_overlib_link_wb(dicts,glink,txt,txid,torder),
 		CAPTION, make_overlib_link_edit_word_title(
@@ -141,8 +141,8 @@ function run_overlib_test(dicts,glink,wid,txt,trans,roman,stat,sent,todo,oldstat
 	'</b><br />' +
 	' <a href=\x22edit_tword.php?wid=' + wid + '\x22 target=\x22ro\x22>Edit term</a><br />' +
 	makeTranslateLinks(dicts,"Transl:",txt) +
-	createTheDictLink(glink,txt,'GTr','') + 
-	createTheDictLink(glink,sent,'GTr','<br />Lookup Sentence:'),
+	createTheDictLink(glink,txt+' ','GTr','') + 
+	createTheDictLink(glink,sent+' ','GTr','<br />Lookup Sentence:'),
 	CAPTION, 'Got it?');
 }
 
@@ -235,9 +235,10 @@ function make_overlib_link_change_status_test(wid,plusminus,text) {
 		'&amp;stchange=' + plusminus + '\x22 target=\x22ro\x22>' + text + '</a> ';
 }
 
-function make_overlib_link_new_word(txid,torder,wid) {
+function make_overlib_link_new_word(txid,torder,wid,seid) {
 	return ' <a href=\x22edit_word.php?tid=' + txid + 
 		'&amp;ord=' + torder + 
+		'&amp;seid=' + seid + 
 		'&amp;wid=' + wid + '\x22 target=\x22ro\x22>Learn term</a> ';
 }
 
@@ -271,9 +272,10 @@ function make_overlib_link_create_edit_multiword_rtl(len,txid,torder,txt,lang,se
 		'\x22 target=\x22ro\x22>' + len + '..' + escape_html_chars(txt.substr(-2).trim()) + '</a> ';
 }
 
-function make_overlib_link_edit_word(txid,torder,wid) {
+function make_overlib_link_edit_word(txid,torder,wid,seid) {
 	return ' <a href=\x22edit_word.php?tid=' + txid + 
 		'&amp;ord=' + torder + 
+		'&amp;seid=' + seid + 
 		'&amp;wid=' + wid + '\x22 target=\x22ro\x22>Edit term</a> ';
 }
 

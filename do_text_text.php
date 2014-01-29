@@ -42,7 +42,13 @@ require_once( 'connect.inc.php' );
 require_once( 'dbutils.inc.php' );
 require_once( 'utilities.inc.php' );
 
+$headerUpdate="";
 $sql = 'select TxID,TxLgID, TxTitle, TxAnnotatedText,TxText from ' . $tbpref . 'texts where TxID = ' . $_REQUEST['text'];
+if(isset($_GET['next'])){
+$sql = 'select TxID,TxLgID, TxTitle, TxAnnotatedText,TxText from ' . $tbpref . 'texts where TxID  = IFNULL((select min(TxID) from ' . $tbpref . 'texts where TxID > ' . $_REQUEST['text'].' AND TxLgID='.$_REQUEST['lang'].'),' . $_REQUEST['text'].')';
+}elseif(isset($_GET['previous'])){
+$sql = 'select TxID,TxLgID, TxTitle, TxAnnotatedText,TxText from ' . $tbpref . 'texts where TxID =IFNULL((select max(TxID) from ' . $tbpref . 'texts where TxID < ' . $_REQUEST['text'].' AND TxLgID='.$_REQUEST['lang'].'),' . $_REQUEST['text'].')';
+}
 $res = do_mysql_query($sql);
 $record = mysql_fetch_assoc($res);
 $TxtId=$record['TxID'];
@@ -54,9 +60,13 @@ $ann = $record['TxAnnotatedText'];
 $ann_exists = (strlen($ann) > 0);
 mysql_free_result($res);
 
+if(isset($_GET['next']) || isset($_GET['previous'])){
+$headerUpdate="window.parent.frames['h'].src='do_text_text.php?text=$TxtId';";
+}
+
 pagestart_nobody(tohtml($title));
 
-$sql = 'select LgSplitEachChar, LgRegexpWordCharacters, LgName, LgGoogleTranslateURI, LgTextSize, LgRemoveSpaces, LgRightToLeft, LgID  from ' . $tbpref . 'languages where LgID = ' . $langid;
+$sql = 'select splitSize, LgSplitEachChar, LgRegexpWordCharacters, LgName, LgGoogleTranslateURI, LgTextSize, LgRemoveSpaces, LgRightToLeft, LgID  from ' . $tbpref . 'languages where LgID = ' . $langid;
 $res = do_mysql_query($sql);
 $record = mysql_fetch_assoc($res);
 $wb3 = isset($record['LgGoogleTranslateURI']) ? $record['LgGoogleTranslateURI'] : "";
@@ -66,6 +76,8 @@ $SplitAll=($record['LgSplitEachChar']==0)?false:true;
 $NoSpaces=($record['LgRemoveSpaces']==0)?false:true;
 $removeSpaces = $record['LgRemoveSpaces'];
 $rtlScript = $record['LgRightToLeft'];
+$languageName=$record['LgName'];
+$splitMax=$record['splitSize'];
 mysql_free_result($res);
 
 $sql = 'select name,URI from ' . $tbpref . 'dictionaries where languagesLgID = ' . $langid;
@@ -92,15 +104,21 @@ mysql_free_result($res);
 
 $showAll = getSettingZeroOrOne('showallwords',1);
 
+$regex="/([^$termchar]{1,})/";
+if($SplitAll){
+$regex="/([$termchar]{1})/";
+}
 ?>
 <script type="text/javascript">
 //<![CDATA[
 ANN_ARRAY = <?php echo annotation_to_json($ann); ?>;
 TEXTPOS = -1;
 OPENED = 0;
-<?php echo $jsWordList ?>
-;;;
-<?php echo $jsDictsString; ?>
+REGEX=<?php echo $regex; ?>;
+<?php echo $jsDictsString; ?>;
+<?php echo $headerUpdate; ?>;
+<?php echo $jsWordList ?>;
+
 
 WBLINK3 = '<?php echo $wb3; ?>';
 
@@ -120,7 +138,8 @@ $(document).ready( function() {
 </script>
 <?php
 
-echo '<div id="thetext" ' .  ($rtlScript ? 'dir="rtl"' : '') . ' ><p id="container" style="' . ($removeSpaces ? 'word-break:break-all;' : '') . 
+echo '<div id="navigate-top" style="text-align:left;font-size:150%;"><div><a href="do_text_text.php?text='.$TxtId.'&previous=1&lang='.$langid.'" title="Previous text in '.$languageName.'">&#8678;&nbsp;&nbsp;</a><span>'.$title.'</span><a href="do_text_text.php?text='.$TxtId.'&next=1&lang='.$langid.'" title="Next text in '.$languageName.'">&nbsp;&nbsp;&#8680;</a></div></div>'.
+'<div id="thetext" ' .  ($rtlScript ? 'dir="rtl"' : '') . ' ><p id="container" style="' . ($removeSpaces ? 'word-break:break-all;' : '') . 
 'font-size:' . $textsize . '%;line-height: 1.4; margin-bottom: 10px;">';
 
 $currcharcount = 0;	
@@ -131,6 +150,9 @@ $sentences = do_mysql_query($sql);
 		$ordId=1;
 		$sentencesD=array();
 		$sentencesS=array();
+		$Unknown=array();
+		$WordsAll=array();
+		$FrasesAll=array();
 while($sentence=mysql_fetch_assoc($sentences)){
 $tempWordsets=array();
 $sentenceSplit=$sentence['SeSplit'];
@@ -154,14 +176,9 @@ if($tempBuild!=""){$tempWords2[]="*".$tempBuild;}
 $tempWords=$tempWords2;
 //var_dump($tempWords);
 $l = count($tempWords);	
-$ignoreUp=false;
 			for ($i=0; $i<$l; $i++) {
 			if($tempWords[$i][0]=="*"){
-			//var_dump(substr($tempWords[$i],1));
-			$tempWordsets[$ordId]=[substr($tempWords[$i],1),1,$ordId,$sentence['SeID'],1,substr($tempWords[$i],1),$count2]; $ordId++;
-			continue;}
-			if($tempWords[$i][0]==","){
-			$tempWordsets[$ordId]=[substr($tempWords[$i],1)." ",1,$ordId,$sentence['SeID'],1,substr($tempWords[$i],1)." ",1];$ordId++;
+			$tempWordsets[$ordId]=[substr($tempWords[$i],1).' ',1,$ordId,$sentence['SeID'],1,substr($tempWords[$i],1).' ',$count2]; $ordId++;
 			continue;}
 			$frase="";
 			for ($j=1; 0<=$l-$i-$j; $j++) {
@@ -171,21 +188,21 @@ $ignoreUp=false;
 			$count1=0;
 			$count2=0;
 			$length=0;
-				for ($k=0; 0<=$l-$i-$j-$k; $k++) {
+				for ($k=0; 0<=$l-$i-$j-$k && $k<=$splitMax; $k++) {
 				$length++;
 				if($tempWords[$i+$k][0]=="*"){$count2++;$past=substr($tempWords[$i+$k],1);continue;}
 					$count1++;
 					if($past!=""){$frase.=$past;$past="";}
 					$frase.=$tempWords[$i+$k];
 				}
-				//var_dump($frase);
-				//$frase=trim($frase);
-				//$tempWordsets[$frase]=[$frase,$count1,$ordId,$sentence['SeID'],0,$tempWords[$i],$count2];
 				if(array_key_exists(mb_strtolower($frase, 'UTF-8'),$wordList)){
 				$tempWordsets[$ordId]=[$frase,$count1,$ordId,$sentence['SeID'],0,$tempWords[$i],$count2];
 				$i+=$length-1;
-				
-				//var_dump($frase."exist");
+				if($length>1){
+				$FrasesAll[]=mb_strtolower($frase, 'UTF-8');
+				}else{
+				$WordsAll[]=mb_strtolower($frase, 'UTF-8');
+				}
 				for($Win=0;$Win<$length-1;$Win++){
 				$ordId++;
 				if($SplitAll){
@@ -193,38 +210,42 @@ $ignoreUp=false;
 				}else{
 				$ghet=2;
 				}
-				//var_dump($ghet);
 				$valuey=$tempWords[($i)+$Win-$ghet];
-				if($valuey[0]=="*"){//var_dump((($i)+$Win).substr($tempWords[($i)+$Win],1));
+				if($valuey[0]=="*"){
 				$valuexx=substr($tempWords[($i)+$Win-$ghet],1);
 				$tempWordsets[$ordId]=[$valuexx,1,$ordId,$sentence['SeID'],1,$valuexx,1];
-				}else{//var_dump((($i)+$Win).$tempWords[($i)+$Win]);
+				}else{
 				$valuexy=$tempWords[($i)+$Win];
 				if($valuexy[0]=="*"){
 				$tempWordsets[$ordId]=[substr($valuexy,1),1,$ordId,$sentence['SeID'],1,substr($valuexy,1),1];
 				}else{
 				$tempWordsets[$ordId]=[$valuexy,1,$ordId,$sentence['SeID'],0,$valuexy,1];
 				}
-				
 				}
 				}
 				}else{
 				if($length==1){
-				//var_dump($frase);
-				if($frase[0]=="*"){
-				//$tempWordsets[$ordId]=[substr($frase,1),$count1,$ordId,$sentence['SeID'],0,substr($tempWords[$i],1),$count2];
-				}
-				else{$tempWordsets[$ordId]=[$frase,$count1,$ordId,$sentence['SeID'],0,$tempWords[$i],$count2];}}
+				if($frase[0]=="*"){}
+				else{
+				$Unknown[]=mb_strtolower($frase, 'UTF-8');
+				$WordsAll[]=mb_strtolower($frase, 'UTF-8');
+				$tempWordsets[$ordId]=[$frase,$count1,$ordId,$sentence['SeID'],0,$tempWords[$i],$count2];}}
 				}
 			}
 			$ordId++;
 			}
 		$sentencesD[trim($sentence['SeText'])]=$tempWordsets;
-		//var_dump($tempWordsets);
 		$sentencesS[]=trim($sentence['SeText']);
 			$sentNumber += 1;
 			}
-			
+$Unknown=array_unique($Unknown);
+$WordsAll=array_unique($WordsAll);
+$FrasesAll=array_unique($FrasesAll);
+$Allc=count($WordsAll);
+$Allu=count($Unknown);
+$Allf=count($FrasesAll);
+$Unkc=$Allc-$Allu-$Allf;
+runsql('UPDATE ' . $tbpref . 'texts SET words="'.$Allc.'", words_saved="'.($Unkc).'", frases_saved="'.($Allf).'" WHERE TxID='.$TxtId);
 $countx=count($sentencesS);
 for($ii=0;$ii<$countx;$ii++){
 $value=$sentencesS[$ii];

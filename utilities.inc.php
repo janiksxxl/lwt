@@ -584,8 +584,80 @@ For more information, please refer to [http://unlicense.org/].
 
 // -------------------------------------------------------------
 
+function loginForm(){
+return '<div id="form_container" style="
+position:absolute;
+     width:450px;
+     height:400px;
+     z-index:15;
+     top:50%;
+     left:50%;
+	 padding-left:20px;
+     margin:-200px 0 0 -225px;
+     background:green;">
+	
+		<h1><a>Autorization Form</a></h1>
+		<form action="" method="post" class="appnitro" id="form_783709">
+					<div class="form_description">
+			<p>Use Your credentials to access Your account!</p>
+		</div>						
+			<ul>
+			
+					<li id="li_1">
+		<label for="element_1" class="description">Username </label>
+		<div>
+			<input type="text" value="" maxlength="255" class="element text medium" name="username" id="username"> 
+		</div><p id="guide_1" class="guidelines"><small>Enter Your username</small></p> 
+		</li>		<li id="li_2">
+		<label for="element_2" class="description">Password </label>
+		<div>
+			<input type="password" value="" maxlength="255" class="element text medium" name="password" id="password"> 
+		</div><p id="guide_2" class="guidelines"><small>Enter Your password</small></p> 
+		</li>
+					<li class="buttons">
+				<input type="submit" value="Submit" name="submit" class="button_text" id="saveForm">
+		</li>
+			</ul>
+		</form>	
+	</div> ';
+}
 function pagestart_nobody($titletext, $addcss='') {
 	global $debug;
+	session_start();
+	if(!isset($_SESSION['user'])){
+	if(!isset($_REQUEST['username']) || !isset($_REQUEST['password'])){
+	echo loginForm();
+	die();
+	}else{
+$sql = 'select *  from ' . $tbpref . 'users where username ="' . mysql_real_escape_string($_REQUEST['username']).'" AND phash = "' . mysql_real_escape_string($_REQUEST['username']).'"';
+$res = do_mysql_query($sql);
+if(mysql_numrows($res)!=1){
+echo "No such user defined!";
+session_destroy();
+echo loginForm();
+die();
+}else{
+$record = mysql_fetch_assoc($res);
+$_SESSION['user']=$record['id'];
+$_SESSION['session']=sha1($_SERVER['HTTP_USER_AGENT'].$_SERVER['REMOTE_ADDR'].session_id());
+$_SESSION['active-language']=$record['active_language'];
+$dummy=runsql("UPDATE users SET session='".$_SESSION['session']."' WHERE id=".$_SESSION['user']);
+}
+	}
+	}else{
+	if(sha1($_SERVER['HTTP_USER_AGENT'].$_SERVER['REMOTE_ADDR'].session_id())==$_SESSION['session']){
+	if(isset($_REQUEST['exit'])){
+	session_destroy();
+	header("Location: $_SERVER[SELF]");
+	die();
+	}
+	}else{
+	echo "Please reauthorize! Access data have changed!";
+	session_destroy();
+	echo loginForm();
+	die();
+	}
+	}
 	@header( 'Expires: Wed, 11 Jan 1984 05:00:00 GMT' );
 	@header( 'Last-Modified: ' . gmdate( 'D, d M Y H:i:s' ) . ' GMT' );
 	@header( 'Cache-Control: no-cache, must-revalidate, max-age=0' );
@@ -804,6 +876,7 @@ function quickMenu() {
 <option value="backup_restore">Backup/Restore</option>
 <option value="settings">Settings</option>
 <option value="INFO">Help</option>
+<option value="?exit&file=">Logout</option>
 </select><?php
 }
 
@@ -1008,7 +1081,6 @@ function getSetting($key) {
 	$val = get_first_value('select StValue as value from ' . $tbpref . 'settings where StKey = ' . convert_string_to_sqlsyntax($key));
 	if ( isset($val) ) {
 		$val = trim($val);
-		if ($key == 'currentlanguage' ) $val = validateLang($val);
 		if ($key == 'currenttext' ) $val = validateText($val);
 		return $val;
 	}
@@ -1742,7 +1814,7 @@ function createTheDictLink($u,$t) {
 		}
 	}
 	else  // no ### found
-		$r = $url . urlencode($trm); echo $r;
+		$r = $url . urlencode($trm);
 		
 	return $r;
 }
@@ -1770,7 +1842,7 @@ $defDicURI=$dic['URI'];
 if($record['LgDefaultDictionary']==$dic['id']){
 $defDicURI=$dic['URI'];
 }
-$ount++;
+$count++;
 $dictionaries .= makeOpenDictStr(createTheDictLink($dic['URI'],$word), $dic['name']);
 }
 	if ($openfirst && $defDicURI!="") {
@@ -1782,7 +1854,7 @@ $dictionaries .= makeOpenDictStr(createTheDictLink($dic['URI'],$word), $dic['nam
 	if($defDicURI==""){
 	$r .="</br>*No suitable dictionary configured, please add one or more lookup sites*";
 	}
-	$r .= '</br>Meklēt terminu: ';
+	$r .= 'Meklēt terminu: ';
 	$r .=$dictionaries;
 
 	if ($wb3 != "") 
@@ -2322,20 +2394,18 @@ function getSentenceTemp($seid, $wordlc,$mode,$word) {
 
 function get20Sentences($lang, $wordlc, $jsctlname, $mode) {
 	global $tbpref;
-	$r = '<p><b>Sentences in active texts with <i>' . tohtml($wordlc) . '</i></b></p><p>(Click on <img src="icn/tick-button.png" title="Choose" alt="Choose" /> to copy sentence into above term)</p>';
+	$r = '<p><b>Sentences in active texts with <i>' . str_replace(";","",tohtml($wordlc)) . '</i></b></p><p>(Click on <img src="icn/tick-button.png" title="Choose" alt="Choose" /> to copy sentence into above term)</p>';
 	$sql = 'SELECT DISTINCT SeSplit, SeID  FROM ' . $tbpref . 'sentences WHERE SeSplit LIKE "' .$wordlc. ';%" OR SeSplit LIKE "%;' .$wordlc. '" OR SeSplit LIKE "%;' .$wordlc. ';%" AND SeLgID = ' . $lang . ' order by CHAR_LENGTH(SeSplit), SeSplit limit 0,20';
 	$res = do_mysql_query($sql);
 	$r .= '<p>';
 	$done=array();
 	while ($record = mysql_fetch_assoc($res)) {
-	echo "a".$record['SeSplit']."a";
 		if (!in_array($record['SeSplit'],$done)) {
 		$done[]=$record['SeSplit'];
 			$sent = getSentence($record['SeID'], $wordlc,$mode);
 			$r .= '<span class="click" onclick="{' . $jsctlname . '.value=' . prepare_textdata_js($sent[1]) . '; makeDirty();}"><img src="icn/tick-button.png" title="Choose" alt="Choose" /></span> &nbsp;' . $sent[0] . '<br />';
 		}
 	}
-	var_dump($done);
 	mysql_free_result($res);
 	$r .= '</p>';
 	return $r;

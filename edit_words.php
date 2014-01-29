@@ -56,7 +56,7 @@ require_once( 'connect.inc.php' );
 require_once( 'dbutils.inc.php' );
 require_once( 'utilities.inc.php' );
 
-$currentlang = validateLang(processDBParam("filterlang",'currentlanguage','',0));
+$currentlang =$_SESSION['active-language']; //validateLang(processDBParam("filterlang",'currentlanguage','',0));
 $currentsort = processDBParam("sort",'currentwordsort','1',1);
 
 $currentpage = processSessParam("page","currentwordpage",'1',1);

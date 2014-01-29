@@ -46,10 +46,11 @@ $langid=get_link_parameter("lang",pathinfo(__FILE__, PATHINFO_BASENAME));
 $wordlc =	mb_strtolower($word, 'UTF-8');
 pagestart("Term: " . $word,false);
 
-$m1 = runsql('insert into ' . $tbpref . 'words (WoLgID, WoText, WoTextLC, WoStatus, WoStatusChanged,' .  make_score_random_insert_update('iv') . ') values( ' . 
+$m1 = runsql('insert into ' . $tbpref . 'words (WoLgID, WoText, WoTextLC, WoStatus, WoStatusChanged,split,size,' .  make_score_random_insert_update('iv') . ') values( ' . 
 $langid . ', ' . 
 convert_string_to_sqlsyntax($word) . ', ' . 
-convert_string_to_sqlsyntax($wordlc) . ', 99, NOW(), ' .  
+convert_string_to_sqlsyntax($wordlc) . ', 99, NOW(), ' . 
+convert_string_to_sqlsyntax($word) . ', 1, ' .  
 make_score_random_insert_update('id') . ')','Term added');
 $wid = get_last_key();
 

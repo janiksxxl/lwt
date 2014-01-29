@@ -49,7 +49,7 @@ require_once( 'connect.inc.php' );
 require_once( 'dbutils.inc.php' );
 require_once( 'utilities.inc.php' );
 
-$currentlang = validateLang(processDBParam("filterlang",'currentlanguage','',0));
+$currentlang =$_SESSION['active-language']; //validateLang(processDBParam("filterlang",'currentlanguage','',0));
 $currentsort = processDBParam("sort",'currentarchivesort','1',1);
 
 $currentpage = processSessParam("page","currentarchivepage",'1',1);
@@ -223,7 +223,7 @@ if (isset($_REQUEST['chg'])) {
 		<td class="td1">
 		<select name="AtLgID" class="notempty setfocus">
 		<?php
-		echo get_languages_selectoptions($record['AtLgID'],"[Choose...]");
+		echo get_languages_selectoptions($_SESSION['active-language'],"[Choose...]");
 		?>
 		</select> <img src="icn/status-busy.png" title="Field must not be empty" alt="Field must not be empty" />
 		</td>

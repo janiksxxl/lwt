@@ -70,7 +70,7 @@ if (isset($_REQUEST['op'])) {
 			echo '<h4><span class="bigger">' . $titletext . '</span></h4>';
 		
 			$message = runsql('insert into ' . $tbpref . 'words (WoLgID, WoTextLC, WoText, ' .
-				'WoStatus, WoTranslation, WoSentence, WoRomanization, WoStatusChanged,' .  make_score_random_insert_update('iv') . ') values( ' . 
+				'WoStatus, WoTranslation, WoSentence, WoRomanization, WoStatusChanged,split,size, ' .  make_score_random_insert_update('iv') . ') values( ' . 
 				$_REQUEST["WoLgID"] . ', ' .
 				convert_string_to_sqlsyntax($_REQUEST["WoTextLC"]) . ', ' .
 				convert_string_to_sqlsyntax($_REQUEST["WoText"]) . ', ' .
@@ -78,6 +78,8 @@ if (isset($_REQUEST['op'])) {
 				convert_string_to_sqlsyntax($translation) . ', ' .
 				convert_string_to_sqlsyntax(repl_tab_nl($_REQUEST["WoSentence"])) . ', ' .
 				convert_string_to_sqlsyntax($_REQUEST["WoRomanization"]) . ', NOW(), ' .  
+				convert_string_to_sqlsyntax($_REQUEST["WoText"]) . ', ' .
+				'1, ' .
 make_score_random_insert_update('id') . ')', "Term saved");
 			$wid = get_last_key();
 			
@@ -102,7 +104,8 @@ make_score_random_insert_update('id') . ')', "Term saved");
 			$message = runsql('update ' . $tbpref . 'words set WoText = ' . 
 			convert_string_to_sqlsyntax($_REQUEST["WoText"]) . ', WoTranslation = ' . 
 			convert_string_to_sqlsyntax($translation) . ', WoSentence = ' . 
-			convert_string_to_sqlsyntax(repl_tab_nl($_REQUEST["WoSentence"])) . ', WoRomanization = ' .
+			convert_string_to_sqlsyntax(repl_tab_nl($_REQUEST["WoSentence"])) . ',split = ' . 
+			convert_string_to_sqlsyntax(repl_tab_nl($_REQUEST["WoText"])) . ', WoRomanization = ' .
 			convert_string_to_sqlsyntax($_REQUEST["WoRomanization"]) . $xx . ',' . make_score_random_insert_update('u') . ' where WoID = ' . $_REQUEST["WoID"], "Updated");
 			$wid = $_REQUEST["WoID"];
 			
@@ -177,10 +180,10 @@ else {  // if (! isset($_REQUEST['op']))
 	$wid = getreq('wid');
 	
 	if ($wid == '') {
-		if (isset($_GET['lang']) && isset($_GET['txt']) && isset($_GET['seid'])) {
+		if (isset($_GET['lang']) && isset($_GET['txt']) && isset($_REQUEST['seid'])) {
 			$term = $_GET['txt'];
 			$lang = $_GET['lang'];
-			$seid = $_GET['seid'];
+			$seid = $_REQUEST['seid'];
 		} else {
 			my_die("Cannot access Term and Language in edit_word.php");
 		}
@@ -197,6 +200,7 @@ else {  // if (! isset($_REQUEST['op']))
 		if ( $record ) {
 			$term = $record['WoText'];
 			$lang = $record['WoLgID'];
+			$seid = $_REQUEST['seid'];
 		} else {
 			my_die("Cannot access Term and Language in edit_word.php");
 		}
@@ -204,7 +208,7 @@ else {  // if (! isset($_REQUEST['op']))
 		$termlc =	mb_strtolower($term, 'UTF-8');
 		
 	}
-	
+
 	$new = (isset($wid) == FALSE);
 
 	$titletext = ($new ? "Jauns termins" : "Rediģēt terminu") . ": " . tohtml($term);
@@ -277,14 +281,12 @@ else {  // if (! isset($_REQUEST['op']))
 		$sql = 'select WoTranslation, WoSentence, WoRomanization, WoStatus from ' . $tbpref . 'words where WoID = ' . $wid;
 		$res = do_mysql_query($sql);
 		if ($record = mysql_fetch_assoc($res)) {
-			
 			$status = $record['WoStatus'];
 			if ($fromAnn == '' ) {
 				if ($status >= 98) $status = 1;
 			}
 			$sentence = repl_tab_nl($record['WoSentence']);
 			if ($sentence == '' && isset($_REQUEST['tid']) && isset($_REQUEST['ord'])) {
-				$seid = get_first_value("select TiSeID as value from " . $tbpref . "textitems where TiTxID = " . $_REQUEST['tid'] . " and TiWordCount = 1 and TiOrder = " . $_REQUEST['ord']);
 				$sent = getSentence($seid, $term, (int) getSettingWithDefault('set-term-sentence-count'));
 				$sentence = repl_tab_nl($sent[1]);
 			}
@@ -302,11 +304,11 @@ else {  // if (! isset($_REQUEST['op']))
 			<table class="tab2" cellspacing="0" cellpadding="5">
 			<tr title="Only change uppercase/lowercase!">
 			<td class="td1 right"><b>Labot terminu:</b></td>
-			<td class="td1"><input <?php echo $scrdir; ?> class="notempty" type="text" name="WoText" value="<?php echo tohtml($term); ?>" maxlength="250" size="35" /> <img src="icn/status-busy.png" title="Field must not be empty" alt="Field must not be empty" /></td>
+			<td class="td1"><input <?php echo $scrdir; ?> class="notempty" type="text" name="WoText" value="<?php echo tohtml($term); ?>" maxlength="250" style="width:90%"/> <img src="icn/status-busy.png" title="Field must not be empty" alt="Field must not be empty" /></td>
 			</tr>
 			<tr>
 			<td class="td1 right">Tulkojums:</td>
-			<td class="td1"><textarea name="WoTranslation" class="setfocus textarea-noreturn checklength" data_maxlength="500" data_info="Translation" cols="35" rows="3"><?php echo tohtml($transl); ?></textarea></td>
+			<td class="td1"><textarea name="WoTranslation" class="setfocus textarea-noreturn checklength" data_maxlength="500" data_info="Translation" style="width:90%" rows="3"><?php echo tohtml($transl); ?></textarea></td>
 			</tr>
 			<tr>
 			<td class="td1 right">Tegi:</td>
@@ -316,12 +318,11 @@ else {  // if (! isset($_REQUEST['op']))
 			</tr>
 			<tr>
 			<td class="td1 right">Romanizācija.:</td>
-			<td class="td1"><input type="text" name="WoRomanization" maxlength="100" size="35" 
-			value="<?php echo tohtml($record['WoRomanization']); ?>" /></td>
+			<td class="td1"><input type="text" name="WoRomanization" maxlength="100" style="width:90%" value="<?php echo tohtml($record['WoRomanization']); ?>" /></td>
 			</tr>
 			<tr>
 			<td class="td1 right">Teikums<br />Termins iekš {...}:</td>
-			<td class="td1"><textarea <?php echo $scrdir; ?> name="WoSentence" class="textarea-noreturn checklength" data_maxlength="1000" data_info="Sentence" cols="35" rows="3"><?php echo tohtml($sentence); ?></textarea></td>
+			<td class="td1"><textarea <?php echo $scrdir; ?> name="WoSentence" class="textarea-noreturn checklength" data_maxlength="1000" data_info="Sentence" style="width:90%" rows="2"><?php echo tohtml($sentence); ?></textarea></td>
 			</tr>
 			<tr>
 			<td class="td1 right">Progress:</td>

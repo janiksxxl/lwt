@@ -59,7 +59,14 @@ if (isset($_REQUEST['op'])) {
 	if (mb_strtolower($text, 'UTF-8') == $textlc) {
 	
 		// INSERT
-		
+		$vals=array();
+if($split=="1")
+	{
+	$vals=getCharArray3($text);
+	}
+	else{
+	$vals=preg_split("/([ '-])/m",$text,-1,PREG_SPLIT_DELIM_CAPTURE | PREG_SPLIT_NO_EMPTY);
+	}
 		if ($_REQUEST['op'] == 'Save') {
 	
 			$titletext = "New Term: " . tohtml(prepare_textdata($_REQUEST["WoTextLC"]));
@@ -67,14 +74,16 @@ if (isset($_REQUEST['op'])) {
 			echo '<h4><span class="bigger">' . $titletext . '</span></h4>';
 					
 			$message = runsql('insert into ' . $tbpref . 'words (WoLgID, WoTextLC, WoText, ' .
-				'WoStatus, WoTranslation, WoSentence, WoRomanization, WoStatusChanged,' .  make_score_random_insert_update('iv') . ') values( ' . 
+				'WoStatus, WoTranslation, WoSentence, WoRomanization,split,size, WoStatusChanged,' .  make_score_random_insert_update('iv') . ') values( ' . 
 				$_REQUEST["WoLgID"] . ', ' .
 				convert_string_to_sqlsyntax($_REQUEST["WoTextLC"]) . ', ' .
 				convert_string_to_sqlsyntax($_REQUEST["WoText"]) . ', ' .
 				$_REQUEST["WoStatus"] . ', ' .
 				convert_string_to_sqlsyntax($translation) . ', ' .
 				convert_string_to_sqlsyntax(repl_tab_nl($_REQUEST["WoSentence"])) . ', ' .
-				convert_string_to_sqlsyntax($_REQUEST["WoRomanization"]) . ', NOW(), ' .  
+				convert_string_to_sqlsyntax($_REQUEST["WoRomanization"]) . ', ' .
+				convert_string_to_sqlsyntax(implode(";",$vals)) . ', ' .
+				count($vals) . ', NOW(), ' .  
 make_score_random_insert_update('id') . ')', "Term saved");
 			$wid = get_last_key();
 			
@@ -129,7 +138,6 @@ if($split=="1")
 	else{
 	$vals=preg_split("/([ '-])/m",$text,-1,PREG_SPLIT_DELIM_CAPTURE | PREG_SPLIT_NO_EMPTY);
 	}
-	var_dump($vals);
 	$jsAdd="[";
 	foreach($vals as $val){
 	if($val=="") continue;
@@ -224,11 +232,21 @@ else {  // if (! isset($_REQUEST['op']))
 
 $split=$_GET['split'];
 	$scrdir = getScriptDirectionTag($lang);
-	
+$vals=array();
+if($split=="1")
+{
+$vals=getCharArray3($term);
+}
+else{
+$vals=preg_split("/([ '-])/m",$term,-1,PREG_SPLIT_DELIM_CAPTURE | PREG_SPLIT_NO_EMPTY);
+}	
 	// NEW
 	
 	if ($new) {
-		$sent = getSentence($seid, $termlc, (int) getSettingWithDefault('set-term-sentence-count'));
+	
+
+	
+		$sent = getSentence($seid, implode(";",$vals), (int) getSettingWithDefault('set-term-sentence-count'));
 			
 		?>
 	
@@ -239,11 +257,11 @@ $split=$_GET['split'];
 		<table class="tab2" cellspacing="0" cellpadding="5">
 		<tr title="Only change uppercase/lowercase!">
 		<td class="td1 right"><b>New Term:</b></td>
-		<td class="td1"><input <?php echo $scrdir; ?> class="notempty" type="text" name="WoText" value="<?php echo tohtml($term); ?>" maxlength="250" size="35" /> <img src="icn/status-busy.png" title="Field must not be empty" alt="Field must not be empty" /></td>
+		<td class="td1"><input <?php echo $scrdir; ?> class="notempty" type="text" name="WoText" value="<?php echo tohtml($term); ?>" maxlength="250" style="width:90%" /> <img src="icn/status-busy.png" title="Field must not be empty" alt="Field must not be empty" /></td>
 		</tr>
 		<tr>
 		<td class="td1 right">Translation:</td>
-		<td class="td1"><textarea name="WoTranslation" class="setfocus textarea-noreturn checklength" data_maxlength="500" data_info="Translation" cols="35" rows="3"></textarea></td>
+		<td class="td1"><textarea name="WoTranslation" class="setfocus textarea-noreturn checklength" data_maxlength="500" data_info="Translation" style="width:90%" rows="3"></textarea></td>
 		</tr>
 		<tr>
 		<td class="td1 right">Tags:</td>
@@ -253,11 +271,11 @@ $split=$_GET['split'];
 		</tr>
 		<tr>
 		<td class="td1 right">Romaniz.:</td>
-		<td class="td1"><input type="text" name="WoRomanization" value="" maxlength="100" size="35" /></td>
+		<td class="td1"><input type="text" name="WoRomanization" value="" maxlength="100" style="width:90%" /></td>
 		</tr>
 		<tr>
 		<td class="td1 right">Sentence<br />Term in {...}:</td>
-		<td class="td1"><textarea <?php echo $scrdir; ?> name="WoSentence" class="textarea-noreturn checklength" data_maxlength="1000" data_info="Sentence" cols="35" rows="3"><?php echo tohtml(repl_tab_nl($sent[1])); ?></textarea></td>
+		<td class="td1"><textarea <?php echo $scrdir; ?> name="WoSentence" class="textarea-noreturn checklength" data_maxlength="1000" data_info="Sentence" style="width:90%" rows="2"><?php echo tohtml(repl_tab_nl($sent[1])); ?></textarea></td>
 		</tr>
 		<tr>
 		<td class="td1 right">Status:</td>
@@ -274,7 +292,7 @@ $split=$_GET['split'];
 		</tr>
 		</table>
 		</form>
-		<div id="exsent"><span class="click" onclick="do_ajax_show_sentences(<?php echo $lang; ?>, <?php echo prepare_textdata_js($termlc) . ', ' . prepare_textdata_js("document.forms['newword'].WoSentence"); ?>);"><img src="icn/sticky-notes-stack.png" title="Show Sentences" alt="Show Sentences" /> Show Sentences</span></div>	
+		<div id="exsent"><span class="click" onclick="do_ajax_show_sentences(<?php echo $lang; ?>, <?php echo prepare_textdata_js(implode(";",$vals)) . ', ' . prepare_textdata_js("document.forms['newword'].WoSentence"); ?>);"><img src="icn/sticky-notes-stack.png" title="Show Sentences" alt="Show Sentences" /> Show Sentences</span></div>	
 		<?php
 	}
 	
@@ -291,7 +309,7 @@ $split=$_GET['split'];
 			$sentence = repl_tab_nl($record['WoSentence']);
 			if ($sentence == '') {
 				$seid = get_first_value("select TiSeID as value from " . $tbpref . "textitems where TiTxID = " . $_REQUEST['tid'] . " and TiOrder = " . $_REQUEST['ord']);
-				$sent = getSentence($seid, $termlc, (int) getSettingWithDefault('set-term-sentence-count'));
+				$sent = getSentence($seid, implode(";",$vals), (int) getSettingWithDefault('set-term-sentence-count'));
 				$sentence = repl_tab_nl($sent[1]);
 			}
 			$transl = repl_tab_nl($record['WoTranslation']);
@@ -308,11 +326,11 @@ $split=$_GET['split'];
 			<table class="tab2" cellspacing="0" cellpadding="5">
 			<tr title="Only change uppercase/lowercase!">
 			<td class="td1 right"><b>Edit Term:</b></td>
-			<td class="td1"><input <?php echo $scrdir; ?> class="notempty" type="text" name="WoText" value="<?php echo tohtml($term); ?>" maxlength="250" size="35" /> <img src="icn/status-busy.png" title="Field must not be empty" alt="Field must not be empty" /></td>
+			<td class="td1"><input <?php echo $scrdir; ?> class="notempty" type="text" name="WoText" value="<?php echo tohtml($term); ?>" maxlength="250" style="width:90%" /> <img src="icn/status-busy.png" title="Field must not be empty" alt="Field must not be empty" /></td>
 			</tr>
 			<tr>
 			<td class="td1 right">Translation:</td>
-			<td class="td1"><textarea name="WoTranslation" class="setfocus textarea-noreturn checklength" data_maxlength="500" data_info="Translation" cols="35" rows="3"><?php echo tohtml($transl); ?></textarea></td>
+			<td class="td1"><textarea name="WoTranslation" class="setfocus textarea-noreturn checklength" data_maxlength="500" data_info="Translation" style="width:90%" rows="3"><?php echo tohtml($transl); ?></textarea></td>
 			</tr>
 			<tr>
 			<td class="td1 right">Tags:</td>
@@ -322,12 +340,12 @@ $split=$_GET['split'];
 			</tr>
 			<tr>
 			<td class="td1 right">Romaniz.:</td>
-			<td class="td1"><input type="text" name="WoRomanization" maxlength="100" size="35" 
+			<td class="td1"><input type="text" name="WoRomanization" maxlength="100" style="width:90%"
 			value="<?php echo tohtml($record['WoRomanization']); ?>" /></td>
 			</tr>
 			<tr>
 			<td class="td1 right">Sentence<br />Term in {...}:</td>
-			<td class="td1"><textarea <?php echo $scrdir; ?> name="WoSentence" class="textarea-noreturn checklength" data_maxlength="1000" data_info="Sentence" cols="35" rows="3"><?php echo tohtml($sentence); ?></textarea></td>
+			<td class="td1"><textarea <?php echo $scrdir; ?> name="WoSentence" class="textarea-noreturn checklength" data_maxlength="1000" data_info="Sentence" style="width:90%" rows="2"><?php echo tohtml($sentence); ?></textarea></td>
 			</tr>
 			<tr>
 			<td class="td1 right">Status:</td>
@@ -343,7 +361,7 @@ $split=$_GET['split'];
 			</tr>
 			</table>
 			</form>
-			<div id="exsent"><span class="click" onclick="do_ajax_show_sentences(<?php echo $lang; ?>, <?php echo prepare_textdata_js($termlc) . ', ' . prepare_textdata_js("document.forms['editword'].WoSentence"); ?>);"><img src="icn/sticky-notes-stack.png" title="Show Sentences" alt="Show Sentences" /> Show Sentences</span></div>	
+			<div id="exsent"><span class="click" onclick="do_ajax_show_sentences(<?php echo $lang; ?>, <?php echo prepare_textdata_js(implode(";",$vals)) . ', ' . prepare_textdata_js("document.forms['editword'].WoSentence"); ?>);"><img src="icn/sticky-notes-stack.png" title="Show Sentences" alt="Show Sentences" /> Show Sentences</span></div>	
 			<?php
 		}
 		mysql_free_result($res);

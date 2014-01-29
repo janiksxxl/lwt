@@ -80,10 +80,7 @@ if (isset($_REQUEST['refresh'])) {
 	$id = $_REQUEST['refresh'] + 0;
 	$message2 = runsql('delete from ' . $tbpref . 'sentences where SeLgID = ' . $id, 
 		"Sentences deleted");
-	$message3 = runsql('delete from ' . $tbpref . 'textitems where TiLgID = ' . $id, 
-		"Text items deleted");
 	adjust_autoincr('sentences','SeID');
-	adjust_autoincr('textitems','TiID');
 	$sql = "select TxID, TxText from " . $tbpref . "texts where TxLgID = " . $id . " order by TxID";
 	$res = do_mysql_query($sql);
 	while ($record = mysql_fetch_assoc($res)) {
@@ -92,7 +89,7 @@ if (isset($_REQUEST['refresh'])) {
 		splitCheckText($txttxt, $id, $txtid );
 	}
 	mysql_free_result($res);
-	$message = $message2 . " / " . $message3 . " / Sentences added: " . get_first_value('select count(*) as value from ' . $tbpref . 'sentences where SeLgID = ' . $id) . " / Text items added: " . get_first_value('select count(*) as value from ' . $tbpref . 'textitems where TiLgID = ' . $id);
+	$message = $message2 . "/ Sentences added: " . get_first_value('select count(*) as value from ' . $tbpref . 'sentences where SeLgID = ' . $id) . " / Text items added: " . get_first_value('select count(*) as value from ' . $tbpref . 'textitems where TiLgID = ' . $id);
 }
 
 // DEL
@@ -110,7 +107,7 @@ if (isset($_REQUEST['del'])) {
 	if ( $anztexts > 0 || $anzarchtexts > 0 || $anzwords > 0) {
 		$message = 'You must first delete texts, archived texts and words with this language!';
 	} else {
-		$message = runsql('delete from ' . $tbpref . 'languages where LgID = ' . $_REQUEST['del'], 
+		$message = runsql('delete from ' . $tbpref . 'languages where LgID = ' . $_REQUEST['del'].'  AND user='.$_SESSION['user'], 
 			"Deleted");
 		adjust_autoincr('languages','LgID');
 	}
@@ -123,7 +120,7 @@ elseif (isset($_REQUEST['op'])) {
 	// INSERT
 	
 	if ($_REQUEST['op'] == 'Save')
-		$message = runsql('insert into ' . $tbpref . 'languages (LgName, LgGoogleTranslateURI, LgExportTemplate, LgTextSize, LgCharacterSubstitutions, LgRegexpSplitSentences, LgExceptionsSplitSentences, LgRegexpWordCharacters, LgRemoveSpaces, LgSplitEachChar, LgRightToLeft) values(' . 
+		$message = runsql('insert into ' . $tbpref . 'languages (LgName, LgGoogleTranslateURI, LgExportTemplate, LgTextSize, LgCharacterSubstitutions, LgRegexpSplitSentences, LgExceptionsSplitSentences, LgRegexpWordCharacters, LgRemoveSpaces, LgSplitEachChar, LgRightToLeft, user,splitSize, iso_3) values(' . 
 		convert_string_to_sqlsyntax($_REQUEST["LgName"]) . ', ' .
 		convert_string_to_sqlsyntax($_REQUEST["LgGoogleTranslateURI"]) . ', '.
 		convert_string_to_sqlsyntax($_REQUEST["LgExportTemplate"]) . ', '.
@@ -134,14 +131,17 @@ elseif (isset($_REQUEST['op'])) {
 		convert_string_to_sqlsyntax($_REQUEST["LgRegexpWordCharacters"]) . ', '.
 		$_REQUEST["LgRemoveSpaces"] . ', '.
 		$_REQUEST["LgSplitEachChar"] . ', '.
-		$_REQUEST["LgRightToLeft"] . 
+		$_REQUEST["LgRightToLeft"] . ', '.
+		$_SESSION['user']. ', '.
+		$_REQUEST["LgFraseLength"] . ', '.
+		convert_string_to_sqlsyntax($_REQUEST["LgIso3"]) .
 		')', 'Saved');
 	
 	// UPDATE
 	
 	elseif ($_REQUEST['op'] == 'Change') {
 		// Get old values
-		$sql = "select * from " . $tbpref . "languages where LgID=" . $_REQUEST["LgID"];
+		$sql = "select * from " . $tbpref . "languages where LgID=" . $_REQUEST["LgID"].' AND user='.$_SESSION['user'];
 		$res = do_mysql_query($sql);
 		$record = mysql_fetch_assoc($res);
 		if ($record == FALSE) my_die("Cannot access language data: $sql");
@@ -179,17 +179,39 @@ elseif (isset($_REQUEST['op'])) {
 		'LgRegexpWordCharacters = ' . convert_string_to_sqlsyntax($_REQUEST["LgRegexpWordCharacters"]) . ', ' .
 		'LgRemoveSpaces = ' . $_REQUEST["LgRemoveSpaces"] . ', ' .
 		'LgSplitEachChar = ' . $_REQUEST["LgSplitEachChar"] . ', ' . 
-		'LgRightToLeft = ' . $_REQUEST["LgRightToLeft"] . 
-		' where LgID = ' . $_REQUEST["LgID"], 'Updated');
+		'LgRightToLeft = ' . $_REQUEST["LgRightToLeft"] . ', ' . 
+		'splitSize = ' . $_REQUEST["LgFraseLength"] . ', ' . 
+		'iso_3 = ' . convert_string_to_sqlsyntax($_REQUEST["LgIso3"]) . 
+		' where LgID = ' . $_REQUEST["LgID"].' AND user='.$_SESSION['user'], 'Updated');
+		
+		$dicts=explode(" ; ",$_POST['LgDicts']);
+		foreach($dicts as $valued){
+		$parts=explode(" = ",$valued);
+		if(count($parts)==2){
+		$resultx=mysql_query('SELECT * from ' . $tbpref . 'dictionaries where (name="'.trim($parts[0]).'" OR URI="'.trim($parts[1]).'") AND languagesLgID='.$_REQUEST["LgID"]);
+		if(mysql_numrows($resultx)==0){
+		die(var_dump("Insert!"));
+		runsql('INSERT INTO ' . $tbpref . 'dictionaries (name,URI,languagesLgID) VALUES ("'.trim($parts[0]).'","'.trim($parts[0]).'",'.$_REQUEST["LgID"].')');
+		}else{
+		$re=mysql_fetch_assoc($resultx);
+		if(trim($parts[1])==$re['URI']){
+		runsql('UPDATE ' . $tbpref . 'dictionaries SET URI="'.trim($parts[1]).'" WHERE languagesLgID='.$_REQUEST["LgID"].' AND name="'.trim($parts[0]).'"');
+		}elseif(trim($parts[0])==$re['name']){
+		runsql('UPDATE ' . $tbpref . 'dictionaries SET name="'.trim($parts[0]).'" WHERE languagesLgID='.$_REQUEST["LgID"].' AND URI="'.trim($parts[1]).'"');
+		}else{
+		if(trim($parts[1])==""){
+		runsql('DELETE FROM ' . $tbpref . 'dictionaries WHERE languagesLgID='.$_REQUEST["LgID"].' AND name="'.trim($parts[0]).'"');
+		}
+		}
+		}
+		}		
+		}
 		
 		if ($needReParse) {
 			$id = $_REQUEST["LgID"] + 0;
 			runsql('delete from ' . $tbpref . 'sentences where SeLgID = ' . $id, 
 				"Sentences deleted");
-			runsql('delete from ' . $tbpref . 'textitems where TiLgID = ' . $id, 
-				"Text items deleted");
 			adjust_autoincr('sentences','SeID');
-			adjust_autoincr('textitems','TiID');
 			$sql = "select TxID, TxText from " . $tbpref . "texts where TxLgID = " . $id . " order by TxID";
 			$res = do_mysql_query($sql);
 			$cntrp = 0;
@@ -229,11 +251,22 @@ if (isset($_REQUEST['new'])) {
 	<table class="tab1" cellspacing="0" cellpadding="5">
 	<tr>
 	<td class="td1 right backlightyellow">Study Language "L2":</td>
-	<td class="td1"><input type="text" class="notempty setfocus" name="LgName" id="LgName" value="" maxlength="40" size="40" /> <img src="icn/status-busy.png" title="Field must not be empty" alt="Field must not be empty" /></td>
+	<td class="td1"><input type="text" class="notempty setfocus" name="LgName" id="LgName" value="" maxlength="40" style="width:90%" /> <img src="icn/status-busy.png" title="Field must not be empty" alt="Field must not be empty" /></td>
 	</tr>
 	<tr>
-	<td class="td1 right backlightyellow">GoogleTranslate URI:</td>
-	<td class="td1"><input type="text" name="LgGoogleTranslateURI" value="*http://translate.google.com/?ie=UTF-8&sl=••&tl=••&text=###" maxlength="200" size="60" /></td>
+	<td class="td1 right">GoogleTranslate URI:</td>
+	<td class="td1"><input type="text" name="LgGoogleTranslateURI" value="*http://translate.google.com/?ie=UTF-8&sl=••&tl=••&text=###" maxlength="200" style="width:90%" /></td>
+	</tr>
+	<tr>
+	<td class="td1 right">Dictionary URI[Name = URI;]:</td>
+	<td class="td1"><textarea type="text" name="LgDicts" maxlength="200" style="width:90%" ></textarea></td>
+	</tr>
+	<tr>
+	<td class="td1 right">Lang ISO-3:</td>
+	<td class="td1"><input type="text" name="LgIso3" maxlength="3" style="width:90%" /></td>
+	</tr>
+	<td class="td1 right">Average frase size:</td>
+	<td class="td1"><input type="text" name="LgFraseLength" maxlength="2" style="width:90%" /></td>
 	</tr>
 	<tr>
 	<td class="td1 right backlightyellow">Text Size:</td>
@@ -241,19 +274,19 @@ if (isset($_REQUEST['new'])) {
 	</tr>
 	<tr>
 	<td class="td1 right">Character Substitutions:</td>
-	<td class="td1"><input type="text" name="LgCharacterSubstitutions" value="´='|`='|’='|‘='|...=…|..=‥" maxlength="500" size="60" /></td>
+	<td class="td1"><input type="text" name="LgCharacterSubstitutions" value="´='|`='|’='|‘='|...=…|..=‥" maxlength="500" style="width:90%" /></td>
 	</tr>
 	<tr>
 	<td class="td1 right backlightyellow">RegExp Split Sentences:</td>
-	<td class="td1"><input type="text" class="notempty" name="LgRegexpSplitSentences" value=".!?:;" maxlength="500" size="60" /> <img src="icn/status-busy.png" title="Field must not be empty" alt="Field must not be empty" /></td>
+	<td class="td1"><input type="text" class="notempty" name="LgRegexpSplitSentences" value=".!?:;" maxlength="500" style="width:90%" /> <img src="icn/status-busy.png" title="Field must not be empty" alt="Field must not be empty" /></td>
 	</tr>
 	<tr>
 	<td class="td1 right">Exceptions Split Sentences:</td>
-	<td class="td1"><input type="text" name="LgExceptionsSplitSentences" value="Mr.|Dr.|[A-Z].|Vd.|Vds." maxlength="500" size="60" /></td>
+	<td class="td1"><input type="text" name="LgExceptionsSplitSentences" value="Mr.|Dr.|[A-Z].|Vd.|Vds." maxlength="500" style="width:90%" /></td>
 	</tr>
 	<tr>
 	<td class="td1 right backlightyellow">RegExp Word Characters:</td>
-	<td class="td1"><input type="text" class="notempty" name="LgRegexpWordCharacters" value="a-zA-ZÀ-ÖØ-öø-ȳ" maxlength="500" size="60" /> <img src="icn/status-busy.png" title="Field must not be empty" alt="Field must not be empty" /></td>
+	<td class="td1"><input type="text" class="notempty" name="LgRegexpWordCharacters" value="a-zA-ZÀ-ÖØ-öø-ȳ" maxlength="500" style="width:90%" /> <img src="icn/status-busy.png" title="Field must not be empty" alt="Field must not be empty" /></td>
 	</tr>
 	<tr>
 	<td class="td1 right backlightyellow">Make each character a word:</td>
@@ -287,9 +320,19 @@ if (isset($_REQUEST['new'])) {
 
 elseif (isset($_REQUEST['chg'])) {
 	
-	$sql = 'select * from ' . $tbpref . 'languages where LgID = ' . $_REQUEST['chg'];
+	$sql = 'select * from ' . $tbpref . 'languages where LgID = ' . $_REQUEST['chg'].' AND user='.$_SESSION['user'];
 	$res = do_mysql_query($sql);
 	if ($record = mysql_fetch_assoc($res)) {
+	
+	$sql = 'select name,URI from ' . $tbpref . 'dictionaries where languagesLgID = ' . $_REQUEST['chg'];
+$res2 = do_mysql_query($sql);
+$jsDictsString="";
+while($record2=mysql_fetch_assoc($res2)){
+$jsDictsString=$jsDictsString.''.$record2['name'].' = '.$record2['URI'].' ; ';
+}
+mysql_free_result($res2);
+	
+	
 	
 		?>
 	
@@ -300,31 +343,42 @@ elseif (isset($_REQUEST['chg'])) {
 		<table class="tab1" cellspacing="0" cellpadding="5">
 		<tr>
 		<td class="td1 right">Study Language "L2":</td>
-		<td class="td1"><input type="text" class="notempty setfocus" name="LgName" id="LgName" value="<?php echo tohtml($record['LgName']); ?>" maxlength="40" size="40" /> <img src="icn/status-busy.png" title="Field must not be empty" alt="Field must not be empty" /></td>
+		<td class="td1"><input type="text" class="notempty setfocus" name="LgName" id="LgName" value="<?php echo tohtml($record['LgName']); ?>" maxlength="40" style="width:90%" /> <img src="icn/status-busy.png" title="Field must not be empty" alt="Field must not be empty" /></td>
 		</tr>
 		<tr>
 		<td class="td1 right">GoogleTranslate URI:</td>
-		<td class="td1"><input type="text" name="LgGoogleTranslateURI" value="<?php echo tohtml($record['LgGoogleTranslateURI']); ?>" maxlength="200" size="60" /></td>
+		<td class="td1"><input type="text" name="LgGoogleTranslateURI" value="<?php echo tohtml($record['LgGoogleTranslateURI']); ?>" maxlength="200" style="width:90%" /></td>
 		</tr>
+		<tr>
+	<td class="td1 right backlightyellow">Dictionary URI[Name = URI;]:</td>
+	<td class="td1"><textarea name="LgDicts" maxlength="200" style="width:90%" ><?php echo $jsDictsString ?></textarea></td>
+	</tr>
+	<tr>
+	<td class="td1 right backlightyellow">Lang ISO-3:</td>
+	<td class="td1"><input type="text" name="LgIso3" maxlength="3" style="width:90%" value="<?php echo tohtml($record['iso_3']); ?>"/></td>
+	</tr>
+	<td class="td1 right backlightyellow">Average frase size:</td>
+	<td class="td1"><input type="text" name="LgFraseLength" maxlength="2" style="width:90%" value="<?php echo tohtml($record['splitSize']); ?>"/></td>
+	</tr>
 		<tr>
 		<td class="td1 right">Text Size:</td>
 		<td class="td1"><select name="LgTextSize"><?php echo get_languagessize_selectoptions($record['LgTextSize']); ?></select></td>
 		</tr>
 		<tr>
 		<td class="td1 right">Character Substitutions:</td>
-		<td class="td1"><input type="text" name="LgCharacterSubstitutions" value="<?php echo tohtml($record['LgCharacterSubstitutions']); ?>" maxlength="500" size="60" /></td>
+		<td class="td1"><input type="text" name="LgCharacterSubstitutions" value="<?php echo tohtml($record['LgCharacterSubstitutions']); ?>" maxlength="500" style="width:90%" /></td>
 		</tr>
 		<tr>
 		<td class="td1 right">RegExp Split Sentences:</td>
-		<td class="td1"><input type="text" class="notempty" name="LgRegexpSplitSentences" value="<?php echo tohtml($record['LgRegexpSplitSentences']); ?>" maxlength="500" size="60" /> <img src="icn/status-busy.png" title="Field must not be empty" alt="Field must not be empty" /></td>
+		<td class="td1"><input type="text" class="notempty" name="LgRegexpSplitSentences" value="<?php echo tohtml($record['LgRegexpSplitSentences']); ?>" maxlength="500" style="width:90%" /> <img src="icn/status-busy.png" title="Field must not be empty" alt="Field must not be empty" /></td>
 		</tr>
 		<tr>
 		<td class="td1 right">Exceptions Split Sentences:</td>
-		<td class="td1"><input type="text" name="LgExceptionsSplitSentences" value="<?php echo tohtml($record['LgExceptionsSplitSentences']); ?>" maxlength="500" size="60" /></td>
+		<td class="td1"><input type="text" name="LgExceptionsSplitSentences" value="<?php echo tohtml($record['LgExceptionsSplitSentences']); ?>" maxlength="500" style="width:90%" /></td>
 		</tr>
 		<tr>
 		<td class="td1 right">RegExp Word Characters:</td>
-		<td class="td1"><input type="text" class="notempty" name="LgRegexpWordCharacters" value="<?php echo tohtml($record['LgRegexpWordCharacters']); ?>" maxlength="500" size="60" /> <img src="icn/status-busy.png" title="Field must not be empty" alt="Field must not be empty" /></td>
+		<td class="td1"><input type="text" class="notempty" name="LgRegexpWordCharacters" value="<?php echo tohtml($record['LgRegexpWordCharacters']); ?>" maxlength="500" style="width:90%" /> <img src="icn/status-busy.png" title="Field must not be empty" alt="Field must not be empty" /></td>
 		</tr>
 		<tr>
 		<td class="td1 right">Make each character a word:</td>
@@ -340,7 +394,7 @@ elseif (isset($_REQUEST['chg'])) {
 		</tr>
 		<tr>
 		<td class="td1 right">Export Template <img class="click" src="icn/question-frame.png" title="Help" alt="Help" onclick="oewin('info_export_template.htm');" /> :</td>
-		<td class="td1"><input type="text" name="LgExportTemplate" value="<?php echo tohtml($record['LgExportTemplate']); ?>" maxlength="1000" size="60" /></td>
+		<td class="td1"><input type="text" name="LgExportTemplate" value="<?php echo tohtml($record['LgExportTemplate']); ?>" maxlength="1000" style="width:90%" /></td>
 		</tr>
 		<tr>
 		<td class="td1 right" colspan="2"><input type="button" value="Cancel" onclick="{resetDirty(); location.href='edit_languages.php';}" /> 
@@ -361,9 +415,9 @@ else {
 	
 	echo error_message_with_hide($message,0);
 	
-	$current = (int) getSetting('currentlanguage');
+	$current = $_SESSION['active-language'];
 	
-	$recno = get_first_value('select count(*) as value from ' . $tbpref . 'languages'); 
+	$recno = get_first_value('select count(*) as value from ' . $tbpref . 'languages WHERE user='.$_SESSION['user']); 
 	
 ?>
 
@@ -391,7 +445,7 @@ if ($recno==0) {
 
 <?php
 
-$sql = 'select LgID, LgName, LgExportTemplate from ' . $tbpref . 'languages order by LgName';
+$sql = 'select LgID, LgName, LgExportTemplate from ' . $tbpref . 'languages WHERE user='.$_SESSION['user'].' order by LgName';
 if ($debug) echo $sql;
 $res = do_mysql_query($sql);
 while ($record = mysql_fetch_assoc($res)) {

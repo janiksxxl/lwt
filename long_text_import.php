@@ -212,7 +212,7 @@ if (isset($_REQUEST['op'])) {
 	<td class="td1">
 	<select name="LgID" class="notempty setfocus">
 	<?php
-	echo get_languages_selectoptions(getSetting('currentlanguage'),'[Choose...]');
+	echo get_languages_selectoptions($_SESSION['active-language'],'[Choose...]');
 	?>
 	</select> <img src="icn/status-busy.png" title="Field must not be empty" alt="Field must not be empty" /> 
 	</td>

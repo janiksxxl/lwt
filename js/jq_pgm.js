@@ -222,7 +222,7 @@ function word_click_event_do_test_test() {
 	run_overlib_test(
 		DICTS,WBLINK3, 
 		$(this).attr('data_wid'),
-		encodeURIComponent($(this).text()),
+		$(this).text(),
 		$(this).attr('data_trans'),
 		$(this).attr('data_rom'),
 		$(this).attr('data_status'),
@@ -404,23 +404,35 @@ function fillGroupA(context,items,replace){
 ids=[0,0,0,0,0];
 var basea = context.getElementById("container").childNodes;
 inSearch=0;
-
-
 }
-
-function clearGroupA(context,items,replace){
+function clearGroupATest(context,items){
 ids=[null,null,null,null,null];
-alert(items);
 var basea = context.getElementById("text-container").childNodes;
 inSearch=0;
 for(var i = 0; i < basea.length; i++){
 if(basea[i].nodeType == 1 && items[inSearch]==basea[i].getAttribute("data_word")){
-alert(basea[i].getAttribute("data_word"));
+ids[inSearch]=basea[i];
+if(inSearch==items.length-1){return true;}
+inSearch++;
+}else{
+inSearch=0;
+ids[0]=null;
+}
+}
+return false;
+}
+
+
+function clearGroupA(context,items,replace){
+ids=[null,null,null,null,null];
+var basea = context.getElementById("text-container").childNodes;
+inSearch=0;
+for(var i = 0; i < basea.length; i++){
+if(basea[i].nodeType == 1 && items[inSearch]==basea[i].getAttribute("data_word")){
 ids[inSearch]=basea[i];
 if(inSearch==items.length-1){
 BaseId=ids[0];
 for(var j = 0; j < items.length; j++){
-//alert(ids[j].attr("word_id"));
 wordClear(ids[j]);
 ids[j]=null;
 }
@@ -433,7 +445,6 @@ inSearch++;
 inSearch=0;
 ids[0]=null;
 }
-//}catch(e){}
 }
 }
 
@@ -478,15 +489,15 @@ var sample=["孤","孤","じ","ゃ","辛","い","の","に"];
 //wordClear(1);
 //clearGroupA(document,["le"," ","temps",],buildMultiTerm(548,2,99,"ない","ない",31,"something here",3,"ない"));
 //return false;
+
 var selObj = window.getSelection(); 
+if(clearGroupATest(document,selObj.toString().trim().split(REGEX).filter(function(n){return n}))){
 	window.parent.frames['ro'].location.href = 
 			'edit_mword.php?tid='+TID+'&ord='+DOR+'&lang='+DLANG+'&seid='+DSENT+'&split='+DSPLIT+'&txt=' + encodeURIComponent(selObj.toString().trim());
-return false;
-		TEXTPOS = -1;
-		$('span.uwordmarked').removeClass('uwordmarked');
-		$('span.kwordmarked').removeClass('kwordmarked');
-		cClick();
-		
+}else{
+alert("No such frase! Please check Your selection.");
+}
+			return false;	
 	}
 	if (e.which == 27) {  // esc = reset all
 		TEXTPOS = -1;

@@ -46,6 +46,8 @@ $u = getreq('u');
 
 if($k == 'currentlanguage') {
 
+$dummy=runsql("UPDATE users SET active_language=".$v." WHERE id=".$_SESSION['user']);
+$_SESSION['active-language']=$v;
 	unset($_SESSION['currenttextpage']);
 	unset($_SESSION['currenttextquery']);
 	unset($_SESSION['currenttexttag1']);

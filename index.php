@@ -69,7 +69,7 @@ echo "Learning With Texts (LWT)";
 echo '</span></h4><h3>Home' . ($debug ? ' <span class="red">DEBUG</span>' : '') . '</h3>';
 echo "<p>&nbsp;</p>";
 
-$currentlang = getSetting('currentlanguage');
+$currentlang = $_SESSION['active-language'];
 $currenttext = getSetting('currenttext');
 
 $langcnt = get_first_value('select count(*) as value from ' . $tbpref . 'languages');

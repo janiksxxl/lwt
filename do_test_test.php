@@ -232,6 +232,17 @@ if ($count <= 0) {
 		echo $r;  // Show Sentence
 	}
 	
+$sql = 'select name,URI from ' . $tbpref . 'dictionaries where languagesLgID = ' . $lang;
+$res = do_mysql_query($sql);
+$jsDictsString="DICTS=[";
+while($record=mysql_fetch_assoc($res)){
+$jsDictsString=$jsDictsString.'["'."$record[name]".'","'."$record[URI]".'"],';
+}
+$jsDictsString=$jsDictsString."];";
+mysql_free_result($res);
+	
+	
+	
 ?>
 
 <script type="text/javascript">
@@ -239,6 +250,7 @@ if ($count <= 0) {
 WBLINK3 = '<?php echo $wb3; ?>';
 SOLUTION = <?php echo prepare_textdata_js ( $testtype==1 ? ( $nosent ? ($trans) : (' [' . $trans . '] ')) : $save ); ?>;
 OPENED = 0;
+<?php echo $jsDictsString; ?>;
 WID = <?php echo $wid; ?>;
 $(document).ready( function() {
 	$(document).keydown(keydown_event_do_test_test);
